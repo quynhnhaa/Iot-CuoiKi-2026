@@ -1,0 +1,135 @@
+/**
+ * Design token. Mọi màu, khoảng cách và bóng đổ trong ứng dụng đều lấy từ đây —
+ * không có hex rời rạc trong các file khác.
+ *
+ * Bảng màu lấy từ hướng dẫn dataviz đã được kiểm định: nền, mực, màu nhấn và
+ * bốn màu trạng thái (good / warning / serious / critical). Màu trạng thái luôn
+ * đi kèm icon và nhãn chữ, không bao giờ để màu tự mang nghĩa.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Mặt phẳng */
+  --plane: #f9f9f7;
+  --surface: #fcfcfb;
+  --surface-raised: #ffffff;
+  --surface-sunken: #f2f2ef;
+  --surface-hover: rgba(11, 11, 11, 0.035);
+  --surface-active: rgba(11, 11, 11, 0.06);
+
+  /* Mực */
+  --ink: #0b0b0b;
+  --ink-secondary: #52514e;
+  --ink-muted: #898781;
+  --ink-on-accent: #ffffff;
+
+  /* Đường kẻ */
+  --border: rgba(11, 11, 11, 0.1);
+  --border-strong: #c3c2b7;
+  --hairline: #e1e0d9;
+
+  /* Màu nhấn — slot 1 của bảng phân loại */
+  --accent: #2a78d6;
+  --accent-hover: #256abf;
+  --accent-ink: #184f95;
+  --accent-wash: rgba(42, 120, 214, 0.1);
+
+  /* Trạng thái */
+  --good: #0ca30c;
+  --good-ink: #006300;
+  --good-wash: rgba(12, 163, 12, 0.12);
+  --warning: #fab219;
+  --warning-ink: #6b4a00;
+  --warning-wash: rgba(250, 178, 25, 0.16);
+  --serious: #ec835a;
+  --serious-ink: #8a3d17;
+  --serious-wash: rgba(236, 131, 90, 0.16);
+  --critical: #d03b3b;
+  --critical-ink: #a02020;
+  --critical-wash: rgba(208, 59, 59, 0.12);
+  --neutral: #898781;
+  --neutral-wash: rgba(137, 135, 129, 0.14);
+
+  /* Khoảng cách — thang 4px */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Bán kính */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* Bóng đổ */
+  --shadow-sm: 0 1px 2px rgba(11, 11, 11, 0.06);
+  --shadow: 0 1px 3px rgba(11, 11, 11, 0.08), 0 4px 12px rgba(11, 11, 11, 0.04);
+  --shadow-lg: 0 4px 10px rgba(11, 11, 11, 0.08), 0 16px 32px rgba(11, 11, 11, 0.1);
+
+  /* Chữ */
+  --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.0625rem;
+  --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-hero: 2rem;
+
+  /* Kích thước khung */
+  --sidebar-width: 248px;
+  --topbar-height: 60px;
+
+  --ring: 0 0 0 3px var(--accent-wash);
+  --transition: 120ms ease;
+}
+
+/* Chế độ tối: chọn từng bước riêng cho nền tối, không đảo ngược tự động. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme='light'])) {
+    color-scheme: dark;
+
+    --plane: #0d0d0d;
+    --surface: #1a1a19;
+    --surface-raised: #212120;
+    --surface-sunken: #141413;
+    --surface-hover: rgba(255, 255, 255, 0.045);
+    --surface-active: rgba(255, 255, 255, 0.08);
+
+    --ink: #f0efec;
+    --ink-secondary: #c3c2b7;
+    --ink-muted: #898781;
+
+    --border: rgba(255, 255, 255, 0.1);
+    --border-strong: #383835;
+    --hairline: #2c2c2a;
+
+    --accent: #3987e5;
+    --accent-hover: #5598e7;
+    --accent-ink: #86b6ef;
+    --accent-wash: rgba(57, 135, 229, 0.16);
+
+    --good-ink: #0ca30c;
+    --good-wash: rgba(12, 163, 12, 0.18);
+    --warning-ink: #fab219;
+    --warning-wash: rgba(250, 178, 25, 0.16);
+    --serious-ink: #ec835a;
+    --serious-wash: rgba(236, 131, 90, 0.18);
+    --critical-ink: #e66767;
+    --critical-wash: rgba(208, 59, 59, 0.2);
+    --neutral-wash: rgba(137, 135, 129, 0.18);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.5), 0 16px 32px rgba(0, 0, 0, 0.45);
+  }
+}
