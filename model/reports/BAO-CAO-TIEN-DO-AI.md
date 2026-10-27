@@ -1,6 +1,6 @@
 # Báo cáo tổng hợp AI — máy đếm và loại viên
 
-*Cập nhật: 27/10/2026. Đây là báo cáo chính để đọc kết quả hiện tại. Các báo cáo thí nghiệm cũ được giữ làm hồ sơ truy vết; số liệu lịch sử dùng định nghĩa “thuốc lạ” khác không thay thế kết quả đã sửa dưới đây.*
+*Cập nhật: 28/10/2026. Đây là báo cáo chính để đọc kết quả hiện tại. Các báo cáo thí nghiệm cũ được giữ làm hồ sơ truy vết; số liệu lịch sử dùng định nghĩa “thuốc lạ” khác không thay thế kết quả đã sửa dưới đây.*
 
 ## 1. Kết luận hiện tại
 
@@ -11,7 +11,7 @@ Trong bản replay hiện tại, `identity_verified=False`, `identity_gate_valid
 | Thành phần | Trạng thái | Kết quả cần nhớ |
 |---|---|---|
 | Nền dữ liệu | Hoàn thành audit/split | VAIPE còn 9.476 cặp ảnh–nhãn hợp lệ; PharmaVision giữ split gốc |
-| Phát hiện viên | Có checkpoint YOLOv7 một lớp `pill` | COCO AP@0.5:0.95 test 74,22%; tạo ROI cho nhận diện |
+| Phát hiện viên | Có checkpoint YOLOv7 một lớp `pill`; đã thử thêm YOLO11s | COCO AP@0.5:0.95 test: YOLOv7 74,22%, YOLO11s 73,09%; giữ YOLOv7 tạo ROI |
 | Nhận diện ID | Có FGVC-PIM 7 ID | Accuracy closed-set test 97,75%; **không đo khả năng từ chối thuốc lạ** |
 | Xác minh thuốc lạ | Đang nghiên cứu | Cổng theo ID mục tiêu còn 24 trường hợp lạ lọt trên 1.414 ROI thuộc ID đánh giá mới, gộp 7 tình huống mục tiêu |
 | Viên sứt/lỗi | Có EfficientNetV2-S nghiên cứu | Trên pillQC mới miền, bỏ sót 17/43 viên sứt |
@@ -28,14 +28,17 @@ Các ID VAIPE là nhãn ảnh, **không xác nhận hoạt chất hoặc thuốc
 
 ## 3. Phát hiện viên và tạo ROI
 
-YOLOv7 một lớp được train 30 epoch, best epoch 29; DINO/ResNet-50 4-scale train 12 epoch. Cùng chấm bằng COCOeval trên 1.422 ảnh, 5.810 box test:
+YOLOv7 một lớp được train 30 epoch, best epoch 29; DINO/ResNet-50 4-scale train 12 epoch. Theo yêu cầu so sánh thêm YOLO11, đã train **YOLO11s một lớp** từ trọng số detection pretrained trong 30 epoch, ảnh 640 px, batch 8, cùng split VAIPE; best epoch **30** theo validation, không dùng test để chọn. Cùng chấm bằng COCOeval trên 1.422 ảnh, 5.810 box test:
 
 | Model | AP@0.5 | AP@0.75 | AP@0.5:0.95 | AR@0.5:0.95 |
 |---|---:|---:|---:|---:|
 | YOLOv7 | 98,92% | 86,92% | **74,22%** | 80,13% |
+| YOLO11s | 98,83% | 85,18% | 73,09% | 79,73% |
 | DINO | 98,68% | 84,48% | 71,47% | **81,70%** |
 
-Chọn YOLOv7 để xuất ROI theo validation AP@0.5:0.95: 76,76% so với DINO 73,31%. DINO có AR cao hơn khi giữ thêm ứng viên điểm thấp; AR này chưa phải recall ở ngưỡng thả viên. Checkpoint YOLOv7: [best.pt](../runs/detector/yolov7_pill_baseline_20261025_v2/weights/best.pt).
+Giữ YOLOv7 để xuất ROI: trên **cùng COCOeval validation**, YOLOv7 đạt **76,76%**, YOLO11s **76,31%**, DINO **73,31%**. Test chỉ kiểm tra quyết định đã chọn, không dùng chỉnh ngưỡng. Ở cutoff confidence 0,25 trên test, YOLOv7 có **5.791 TP / 32 FP / 19 FN**; YOLO11s **5.777 TP / 66 FP / 33 FN**. Cutoff này chỉ để chẩn đoán ROI, chưa phải ngưỡng vận hành. DINO có AR cao hơn khi giữ thêm ứng viên điểm thấp; AR này chưa phải recall ở ngưỡng thả viên.
+
+YOLO11s có khoảng **9,4 triệu tham số**, so với YOLOv7 khoảng **36,5 triệu**. Lượt xuất dự đoán YOLO11s đo inference trung bình **3,71 ms/ảnh** trên RTX 5060 Ti; số YOLOv7 trước đây khoảng **5,2 ms/ảnh gồm inference và NMS**, nên không coi hai con số là benchmark tốc độ ngang quy trình. YOLO11s đáng cân nhắc cho phần cứng hạn chế sau khi đo end-to-end trên Raspberry Pi/camera thật, nhưng **chưa thay nguồn ROI** vì AP và lỗi hộp đều kém hơn ở lượt này. Hai họ dùng kiến trúc và mặc định huấn luyện khác nhau; kết quả chỉ nói về **YOLO11s cấu hình đã chạy**, không chứng minh mọi biến thể YOLO11 kém YOLOv7. Checkpoint nghiên cứu nằm tại `model/runs/detector/yolo11s_pill_20261027/weights/best.pt`; code và lệnh tái lập ở [YOLO11-SETUP.md](../YOLO11-SETUP.md). Các checkpoint/run lớn không đưa lên GitHub.
 
 ROI được ghép một-một giữa hộp YOLOv7 và nhãn gốc với IoU ≥ 0,5, thêm lề crop 10%. Trong bảy ID, có **9.590 crop hợp lệ**: train 5.782, validation 1.943, test 1.865. Mười nhãn không ghép được bị loại khỏi metric classifier, không gán sai sang hộp khác. Dữ liệu: [yolov7_rois](../../data/processed/vaipe/recognition/yolov7_rois).
 
@@ -84,4 +87,4 @@ Fine-tune hai block cuối EfficientNetV2-S trên CPU, không dùng test cũ đ�
 2. Khóa trước tập đánh giá độc lập theo **viên vật lý, phiên chụp và ID thuốc lạ**. Đánh giá từng thuốc mục tiêu về nhận đúng, nhận nhầm thuốc khác, từ chối khi ảnh mờ/che khuất và lỗi chất lượng. Validation VAIPE đã xem nhiều lần chỉ còn dùng chẩn đoán.
 3. Chỉ sau khi hai cổng danh tính và lỗi qua tiêu chí của hệ thống, tích hợp camera, động cơ, cảm biến xác nhận rơi; đo độ trễ và thử dừng trước khi thả trên Raspberry Pi/cơ cấu thật. Giữ `ACCEPTED` tự động tắt đến lúc đó.
 
-**File chạy chính:** [pipeline replay](../scripts/replay_ai_pipeline_cpu.py), [logic quyết định](../src/common/decision_simulator.py). Lệnh phát lại mẫu, môi trường và giới hạn được ghi ở [PIPELINE-REPLAY-SETUP.md](../PIPELINE-REPLAY-SETUP.md). Hướng dẫn tái lập riêng: [detector](../DETECTOR-SETUP.md), [nhận diện](../RECOGNITION-SETUP.md), [kiểm tra lỗi](../DEFECT-SETUP.md). Nhật ký theo mạch *kết quả → lý do → thay đổi → quyết định* ở [NHAT-KY-LAM-VIEC-AI.md](NHAT-KY-LAM-VIEC-AI.md); đây là nhật ký, không phải báo cáo thứ hai cần đọc để nắm kết luận.
+**File chạy chính:** [pipeline replay](../scripts/replay_ai_pipeline_cpu.py), [logic quyết định](../src/common/decision_simulator.py). Lệnh phát lại mẫu, môi trường và giới hạn được ghi ở [PIPELINE-REPLAY-SETUP.md](../PIPELINE-REPLAY-SETUP.md). Hướng dẫn tái lập riêng: [YOLOv7](../DETECTOR-SETUP.md), [YOLO11s](../YOLO11-SETUP.md), [nhận diện](../RECOGNITION-SETUP.md), [kiểm tra lỗi](../DEFECT-SETUP.md). Nhật ký theo mạch *kết quả → lý do → thay đổi → quyết định* ở [NHAT-KY-LAM-VIEC-AI.md](NHAT-KY-LAM-VIEC-AI.md); đây là nhật ký, không phải báo cáo thứ hai cần đọc để nắm kết luận.

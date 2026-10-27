@@ -7,9 +7,11 @@
 - [Báo cáo tổng hợp kết quả AI](reports/BAO-CAO-TIEN-DO-AI.md)
 - [Nhật ký làm việc AI](reports/NHAT-KY-LAM-VIEC-AI.md)
 
-## Chạy lại detector YOLOv7
+## Chạy lại detector
 
-Xem [hướng dẫn dựng môi trường và chọn CUDA/CPU](DETECTOR-SETUP.md). Lệnh train hỗ trợ `--device auto`, `--device cuda` và `--device cpu`; chạy `scripts/train_yolov7_detector.sh --help` để xem toàn bộ tham số, kể cả `--resume` để tiếp tục một run bị ngắt.
+YOLOv7 vẫn là nguồn ROI hiện tại: xem [hướng dẫn dựng môi trường và chọn CUDA/CPU](DETECTOR-SETUP.md). Lệnh train hỗ trợ `--device auto`, `--device cuda` và `--device cpu`; chạy `scripts/train_yolov7_detector.sh --help` để xem toàn bộ tham số, kể cả `--resume`.
+
+Đã chạy YOLO11s làm đối chứng trên cùng split VAIPE. Xem [kết quả trong báo cáo tổng hợp](reports/BAO-CAO-TIEN-DO-AI.md) và [cách train, resume, đánh giá YOLO11s](YOLO11-SETUP.md).
 
 ## Cấu trúc
 

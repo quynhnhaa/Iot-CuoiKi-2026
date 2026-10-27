@@ -37,6 +37,7 @@ model/toolchains/
 # Model weights, experiment outputs, and logs
 model/checkpoints/
 model/runs/
+weights/
 *.pt
 *.pth
 *.ckpt
