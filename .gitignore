@@ -43,3 +43,13 @@ model/runs/
 *.onnx
 *.safetensors
 *.log
+
+# Web: phu thuoc, build output va database cuc bo
+web/frontend/node_modules/
+web/frontend/dist/
+web/frontend/.vite/
+web/backend/.venv/
+web/backend/*.db
+web/backend/*.sqlite3
+web/backend/instance/
+web/frontend/*.tsbuildinfo
