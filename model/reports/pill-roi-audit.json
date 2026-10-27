@@ -1,0 +1,37 @@
+{
+  "images": 1422,
+  "gt_boxes": 5810,
+  "diagnostic_only": true,
+  "results": [
+    {
+      "model": "yolov7",
+      "score_cutoff": 0.25,
+      "predictions": 5823,
+      "tp50": 5791,
+      "fp50": 32,
+      "fn50": 19,
+      "tp75": 5329,
+      "fn75": 481,
+      "bad_box_count": 0,
+      "precision50": 0.9945045509187704,
+      "recall50": 0.9967297762478485,
+      "recall75": 0.9172117039586919,
+      "median_matched_iou": 0.8973539751242965
+    },
+    {
+      "model": "dino",
+      "score_cutoff": 0.25,
+      "predictions": 5820,
+      "tp50": 5783,
+      "fp50": 37,
+      "fn50": 27,
+      "tp75": 5328,
+      "fn75": 482,
+      "bad_box_count": 2,
+      "precision50": 0.9936426116838488,
+      "recall50": 0.9953528399311532,
+      "recall75": 0.917039586919105,
+      "median_matched_iou": 0.896197965470464
+    }
+  ]
+}

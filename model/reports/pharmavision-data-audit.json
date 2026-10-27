@@ -1,0 +1,19 @@
+{
+  "image_count": 640,
+  "split_class_counts": {
+    "train": {
+      "normal": 190,
+      "defective": 190
+    },
+    "validation": {
+      "normal": 30,
+      "defective": 30
+    },
+    "test": {
+      "normal": 100,
+      "defective": 100
+    }
+  },
+  "duplicate_sha256_groups": [],
+  "errors": []
+}

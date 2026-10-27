@@ -1,0 +1,180 @@
+diff --git a/datasets/coco.py b/datasets/coco.py
+index 51f576c..1a78433 100644
+--- a/datasets/coco.py
++++ b/datasets/coco.py
+@@ -17,6 +17,7 @@ import os
+ import torch
+ import torch.utils.data
+ import torchvision
++from PIL import ImageOps
+ from pycocotools import mask as coco_mask
+ 
+ from datasets.data_util import preparing_dataset
+@@ -354,6 +355,7 @@ class CocoDetection(torchvision.datasets.CocoDetection):
+             print("Error idx: {}".format(idx))
+             idx += 1
+             img, target = super(CocoDetection, self).__getitem__(idx)
++        img = ImageOps.exif_transpose(img)
+         image_id = self.ids[idx]
+         target = {'image_id': image_id, 'annotations': target}
+         img, target = self.prepare(img, target)
+diff --git a/engine.py b/engine.py
+index 85c4e87..0b8edce 100644
+--- a/engine.py
++++ b/engine.py
+@@ -155,6 +155,7 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
+ 
+     _cnt = 0
+     output_state_dict = {} # for debug only
++    export_predictions = [] if os.environ.get("DINO_EXPORT_COCO_JSON") else None
+     for samples, targets in metric_logger.log_every(data_loader, 10, header, logger=logger):
+         samples = samples.to(device)
+ 
+@@ -190,6 +191,15 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
+             target_sizes = torch.stack([t["size"] for t in targets], dim=0)
+             results = postprocessors['segm'](results, outputs, orig_target_sizes, target_sizes)
+         res = {target['image_id'].item(): output for target, output in zip(targets, results)}
++        if export_predictions is not None:
++            for image_id, prediction in res.items():
++                for box, score, label in zip(prediction['boxes'].cpu().tolist(),
++                                             prediction['scores'].cpu().tolist(),
++                                             prediction['labels'].cpu().tolist()):
++                    x1, y1, x2, y2 = box
++                    export_predictions.append({'image_id': image_id, 'category_id': int(label),
++                                               'bbox': [x1, y1, x2 - x1, y2 - y1],
++                                               'score': float(score)})
+ 
+         if coco_evaluator is not None:
+             coco_evaluator.update(res)
+@@ -256,6 +266,11 @@ def evaluate(model, criterion, postprocessors, data_loader, base_ds, device, out
+                 print("BREAK!"*5)
+                 break
+ 
++    if export_predictions is not None:
++        import json
++        with open(os.environ['DINO_EXPORT_COCO_JSON'], 'w') as stream:
++            json.dump(export_predictions, stream)
++
+     if args.save_results:
+         import os.path as osp
+         
+diff --git a/main.py b/main.py
+index 213e75a..ae286da 100644
+--- a/main.py
++++ b/main.py
+@@ -198,7 +198,7 @@ def main(args):
+         base_ds = get_coco_api_from_dataset(dataset_val)
+ 
+     if args.frozen_weights is not None:
+-        checkpoint = torch.load(args.frozen_weights, map_location='cpu')
++        checkpoint = torch.load(args.frozen_weights, map_location='cpu', weights_only=False)
+         model_without_ddp.detr.load_state_dict(checkpoint['model'])
+ 
+     output_dir = Path(args.output_dir)
+@@ -209,7 +209,7 @@ def main(args):
+             checkpoint = torch.hub.load_state_dict_from_url(
+                 args.resume, map_location='cpu', check_hash=True)
+         else:
+-            checkpoint = torch.load(args.resume, map_location='cpu')
++            checkpoint = torch.load(args.resume, map_location='cpu', weights_only=False)
+         model_without_ddp.load_state_dict(checkpoint['model'])
+         if args.use_ema:
+             if 'ema_model' in checkpoint:
+@@ -224,7 +224,7 @@ def main(args):
+             args.start_epoch = checkpoint['epoch'] + 1
+ 
+     if (not args.resume) and args.pretrain_model_path:
+-        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu')['model']
++        checkpoint = torch.load(args.pretrain_model_path, map_location='cpu', weights_only=False)['model']
+         from collections import OrderedDict
+         _ignorekeywordlist = args.finetune_ignore if args.finetune_ignore else []
+         ignorelist = []
+@@ -267,6 +267,16 @@ def main(args):
+     print("Start training")
+     start_time = time.time()
+     best_map_holder = BestMetricHolder(use_ema=args.use_ema)
++    # Preserve the best validation score when resuming. Otherwise the first
++    # post-resume epoch can overwrite a better checkpoint from the old process.
++    if args.start_epoch and (output_dir / 'log.txt').exists():
++        for line in (output_dir / 'log.txt').read_text().splitlines():
++            item = json.loads(line)
++            if item.get('epoch', args.start_epoch) < args.start_epoch:
++                if 'test_coco_eval_bbox' in item:
++                    best_map_holder.update(item['test_coco_eval_bbox'][0], item['epoch'], is_ema=False)
++                if args.use_ema and 'ema_test_coco_eval_bbox' in item:
++                    best_map_holder.update(item['ema_test_coco_eval_bbox'][0], item['epoch'], is_ema=True)
+     for epoch in range(args.start_epoch, args.epochs):
+         epoch_start_time = time.time()
+         if args.distributed:
+diff --git a/models/dino/ops/src/cuda/ms_deform_attn_cuda.cu b/models/dino/ops/src/cuda/ms_deform_attn_cuda.cu
+index d6d5836..52f2798 100644
+--- a/models/dino/ops/src/cuda/ms_deform_attn_cuda.cu
++++ b/models/dino/ops/src/cuda/ms_deform_attn_cuda.cu
+@@ -31,7 +31,7 @@ at::Tensor ms_deform_attn_cuda_forward(
+     AT_ASSERTM(sampling_loc.is_contiguous(), "sampling_loc tensor has to be contiguous");
+     AT_ASSERTM(attn_weight.is_contiguous(), "attn_weight tensor has to be contiguous");
+ 
+-    AT_ASSERTM(value.type().is_cuda(), "value must be a CUDA tensor");
++    AT_ASSERTM(value.is_cuda(), "value must be a CUDA tensor");
+     AT_ASSERTM(spatial_shapes.type().is_cuda(), "spatial_shapes must be a CUDA tensor");
+     AT_ASSERTM(level_start_index.type().is_cuda(), "level_start_index must be a CUDA tensor");
+     AT_ASSERTM(sampling_loc.type().is_cuda(), "sampling_loc must be a CUDA tensor");
+@@ -61,7 +61,7 @@ at::Tensor ms_deform_attn_cuda_forward(
+     for (int n = 0; n < batch/im2col_step_; ++n)
+     {
+         auto columns = output_n.select(0, n);
+-        AT_DISPATCH_FLOATING_TYPES(value.type(), "ms_deform_attn_forward_cuda", ([&] {
++        AT_DISPATCH_FLOATING_TYPES(value.scalar_type(), "ms_deform_attn_forward_cuda", ([&] {
+             ms_deformable_im2col_cuda(at::cuda::getCurrentCUDAStream(),
+                 value.data<scalar_t>() + n * im2col_step_ * per_value_size,
+                 spatial_shapes.data<int64_t>(),
+@@ -97,7 +97,7 @@ std::vector<at::Tensor> ms_deform_attn_cuda_backward(
+     AT_ASSERTM(attn_weight.is_contiguous(), "attn_weight tensor has to be contiguous");
+     AT_ASSERTM(grad_output.is_contiguous(), "grad_output tensor has to be contiguous");
+ 
+-    AT_ASSERTM(value.type().is_cuda(), "value must be a CUDA tensor");
++    AT_ASSERTM(value.is_cuda(), "value must be a CUDA tensor");
+     AT_ASSERTM(spatial_shapes.type().is_cuda(), "spatial_shapes must be a CUDA tensor");
+     AT_ASSERTM(level_start_index.type().is_cuda(), "level_start_index must be a CUDA tensor");
+     AT_ASSERTM(sampling_loc.type().is_cuda(), "sampling_loc must be a CUDA tensor");
+@@ -131,7 +131,7 @@ std::vector<at::Tensor> ms_deform_attn_cuda_backward(
+     for (int n = 0; n < batch/im2col_step_; ++n)
+     {
+         auto grad_output_g = grad_output_n.select(0, n);
+-        AT_DISPATCH_FLOATING_TYPES(value.type(), "ms_deform_attn_backward_cuda", ([&] {
++        AT_DISPATCH_FLOATING_TYPES(value.scalar_type(), "ms_deform_attn_backward_cuda", ([&] {
+             ms_deformable_col2im_cuda(at::cuda::getCurrentCUDAStream(),
+                                     grad_output_g.data<scalar_t>(),
+                                     value.data<scalar_t>() + n * im2col_step_ * per_value_size,
+diff --git a/util/misc.py b/util/misc.py
+index 9cafb12..090cb5f 100644
+--- a/util/misc.py
++++ b/util/misc.py
+@@ -469,7 +469,13 @@ def is_main_process():
+ 
+ def save_on_master(*args, **kwargs):
+     if is_main_process():
+-        torch.save(*args, **kwargs)
++        if len(args) >= 2 and isinstance(args[1], (str, os.PathLike)):
++            path = os.fspath(args[1])
++            temporary = path + '.tmp'
++            torch.save(args[0], temporary, **kwargs)
++            os.replace(temporary, path)
++        else:
++            torch.save(*args, **kwargs)
+ 
+ 
+ def init_distributed_mode(args):
+diff --git a/util/slconfig.py b/util/slconfig.py
+index 8064727..0518115 100644
+--- a/util/slconfig.py
++++ b/util/slconfig.py
+@@ -314,7 +314,7 @@ class SLConfig(object):
+             based_on_style='pep8',
+             blank_line_before_nested_class_or_def=True,
+             split_before_expression_after_opening_paren=True)
+-        text, _ = FormatCode(text, style_config=yapf_style, verify=True)
++        text, _ = FormatCode(text, style_config=yapf_style)
+ 
+         return text
+     

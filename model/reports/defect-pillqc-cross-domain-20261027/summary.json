@@ -1,0 +1,32 @@
+{
+  "source_repo": "https://github.com/matlab-deep-learning/pillQC",
+  "source_commit": "9c0a8ecdca0a3797e784412de077a30ae2c50b3c",
+  "checkpoint": "model/runs/defect/efficientnetv2s_finalblocks_cpu_20261027/best.pt",
+  "checkpoint_sha256": "13a902a5c3015fe1b82a6c95480e0024578a98e448366bf5b73b75168dabbfd5",
+  "best_epoch": 12,
+  "threshold": 0.4,
+  "device": "cpu",
+  "preprocessing": "EXIF transpose, RGB, resize short side 224, center crop 224, ImageNet normalize",
+  "evaluated_counts": {
+    "chip_defective": 43,
+    "normal": 149
+  },
+  "excluded_dirt_count": 138,
+  "confusion_matrix_rows_normal_defective": [
+    [
+      147,
+      2
+    ],
+    [
+      17,
+      26
+    ]
+  ],
+  "defective_recall": 0.6046511627906976,
+  "defective_precision": 0.9285714285714286,
+  "defective_f2": 0.65,
+  "normal_specificity": 0.9865771812080537,
+  "image_count": 192,
+  "overlap_with_pharmavision_sha256": 0,
+  "threshold_tuned_on_pillqc": false
+}

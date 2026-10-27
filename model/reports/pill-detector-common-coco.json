@@ -1,0 +1,28 @@
+{
+  "images": 1422,
+  "gt_boxes": 5810,
+  "results": [
+    {
+      "name": "yolov7",
+      "prediction_count": 6414,
+      "ap50_95": 0.7422222935205931,
+      "ap50": 0.9891846594392332,
+      "ap75": 0.8692339085994194,
+      "ar50_maxdets100": 0.9969018932874355,
+      "ar50_95_maxdets100": 0.8012736660929433,
+      "max_recall_at_precision_99_iou50": 0.99,
+      "method": "pycocotools COCOeval bbox; maxDets=[1,10,100]; IoU=0.50:0.95"
+    },
+    {
+      "name": "dino",
+      "prediction_count": 426600,
+      "ap50_95": 0.7147070346209459,
+      "ap50": 0.9867508108542372,
+      "ap75": 0.8448148728045148,
+      "ar50_maxdets100": 0.9989672977624785,
+      "ar50_95_maxdets100": 0.8170395869191049,
+      "max_recall_at_precision_99_iou50": 0.99,
+      "method": "pycocotools COCOeval bbox; maxDets=[1,10,100]; IoU=0.50:0.95"
+    }
+  ]
+}

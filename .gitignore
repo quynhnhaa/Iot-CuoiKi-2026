@@ -1,0 +1,45 @@
+# Local Python environment and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
+
+# Operating system and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Local credentials and machine-specific settings
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Downloaded datasets, generated crops, and private camera captures
+data/external/
+data/processed/
+data/captured/*
+!data/captured/.gitkeep
+!data/captured/README.md
+!data/captured/manifest.template.csv
+
+# Downloaded upstream repositories and toolchains
+model/vendor/
+model/toolchains/
+
+# Model weights, experiment outputs, and logs
+model/checkpoints/
+model/runs/
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.safetensors
+*.log

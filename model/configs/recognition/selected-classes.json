@@ -1,0 +1,20 @@
+{
+  "status": "approved_for_first_recognition_benchmark",
+  "approved_date": "2026-10-25",
+  "class_ids": [
+    64,
+    91,
+    89,
+    99,
+    51,
+    46,
+    10
+  ],
+  "split_seed": 20261025,
+  "split_paths": {
+    "train": "data/processed/vaipe/splits/train.csv",
+    "validation": "data/processed/vaipe/splits/validation.csv",
+    "test": "data/processed/vaipe/splits/test.csv"
+  },
+  "note": "Visual class IDs only; not verified chemical identity. One-class pill detector still uses all valid VAIPE labels."
+}

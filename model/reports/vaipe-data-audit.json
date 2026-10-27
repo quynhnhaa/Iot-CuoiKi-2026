@@ -1,0 +1,41 @@
+{
+  "seed": 20261025,
+  "source": "VAIPE public_train",
+  "image_count": 9502,
+  "label_count": 9502,
+  "box_count": 32707,
+  "class_count": 108,
+  "issue_counts": {
+    "invalid_label": 25,
+    "unreadable_image": 1
+  },
+  "orphan_label_examples": [],
+  "problem_images": [
+    "VAIPE_P_1130_2",
+    "VAIPE_P_1160_19",
+    "VAIPE_P_128_6",
+    "VAIPE_P_147_6",
+    "VAIPE_P_185_12",
+    "VAIPE_P_185_23",
+    "VAIPE_P_185_24",
+    "VAIPE_P_185_54",
+    "VAIPE_P_208_8",
+    "VAIPE_P_230_11",
+    "VAIPE_P_237_2",
+    "VAIPE_P_239_8",
+    "VAIPE_P_290_9",
+    "VAIPE_P_371_5",
+    "VAIPE_P_411_32",
+    "VAIPE_P_428_16",
+    "VAIPE_P_449_9",
+    "VAIPE_P_46_3",
+    "VAIPE_P_483_2",
+    "VAIPE_P_4_61",
+    "VAIPE_P_519_8",
+    "VAIPE_P_535_9",
+    "VAIPE_P_55_4",
+    "VAIPE_P_728_6",
+    "VAIPE_P_777_3",
+    "VAIPE_P_96_10"
+  ]
+}
