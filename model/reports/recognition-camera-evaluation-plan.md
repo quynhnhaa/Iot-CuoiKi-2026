@@ -1,6 +1,6 @@
 # Kế hoạch dữ liệu camera để tiếp tục nhận diện
 
-*Lập ngày 27/10/2026 từ kết quả [nghiên cứu nhận diện](recognition-autonomous-research-20261027.md). Chưa có ảnh camera thật trong `data/captured`.*
+*Lập ngày 27/10/2026 từ kết quả [nghiên cứu nhận diện](recognition-autonomous-research-20261027.md). Cập nhật 28/10: đã có 19 ảnh điện thoại pilot trong `data/captured`, chưa có ảnh từ camera/buồng chụp dự kiến của máy.*
 
 ## Vì sao cần ảnh mới
 

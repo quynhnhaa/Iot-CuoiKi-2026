@@ -25,6 +25,8 @@ Các ID VAIPE là nhãn ảnh, **không xác nhận hoạt chất hoặc thuốc
 - PharmaVision có 640 ảnh; giữ split tác giả: 380 train, 60 validation, 200 test.
 - YOLOv7 chỉ cần biết **có viên thuốc**, nên học một lớp `pill` trên toàn bộ VAIPE hợp lệ. Nhánh gọi tên thuốc ở vòng đầu chỉ học bảy ID đã chọn: **64, 91, 89, 99, 51, 46, 10**. Đây là phạm vi thử nghiệm, không có nghĩa VAIPE chỉ có bảy loại thuốc. Cấu hình ở [selected-classes.json](../configs/recognition/selected-classes.json).
 - Nhãn VAIPE **107** mang nghĩa “ngoài đơn thuốc” theo ngữ cảnh, không phải một ID ngoại hình thuốc lạ. Những phép đo unknown lịch sử có tính 107 không dùng làm kết luận cuối cho xác minh danh tính. Đánh giá đã sửa loại 107 khỏi tập unknown ngoại hình; không gán nó thành known.
+- Đã nhận **19 ảnh pilot chụp điện thoại** trong `data/captured`: 5 tên thuốc, 13 ảnh viên bình thường (`o`), 6 ảnh viên vỡ/sứt (`x`) theo tên file. Tất cả đọc được ở 3024×3024, không trùng SHA-256. Người chụp cho biết tên thuốc đã đối chiếu với bao bì/lô, nhưng mã tham chiếu và nhóm ảnh theo viên vật lý/phiên chưa được ghi trong manifest. Tất cả vẫn `unassigned`; chưa phải dữ liệu kiểm tra camera máy hoặc tập đánh giá độc lập. Xem [hướng dẫn ảnh pilot](../../data/captured/README.md).
+- Chẩn đoán YOLOv7 CPU ở ngưỡng demo 0,25 trên 19 ảnh điện thoại: **17 ảnh một hộp, 2 ảnh hai hộp**. Hai ảnh hai hộp là một viên `betahistin24at` vỡ thành hai mảnh; detector thấy từng mảnh. Logic hiện tại dừng ở `MULTIPLE_PILLS`, không thả viên. Chưa có nhãn bounding box để tính AP/recall trên tập này, và chưa có ảnh camera máy để đánh giá chuyển miền vận hành.
 
 ## 3. Phát hiện viên và tạo ROI
 
@@ -83,7 +85,7 @@ Fine-tune hai block cuối EfficientNetV2-S trên CPU, không dùng test cũ đ�
 
 ## 7. Việc cần làm tiếp và cách chạy lại
 
-1. Thu ảnh từ **camera và buồng chụp của máy**, ghi ID thuốc thật đã đối chiếu, ảnh thuốc đúng, thuốc sai gần giống, viên lỗi và nhiều góc/mặt khi có thể. [Mẫu manifest và quy tắc chia](../../data/captured/README.md) đã có; hiện chưa có ảnh camera thật.
+1. Từ 19 ảnh điện thoại pilot, bổ sung nhóm **viên vật lý, phiên chụp** và mã tham chiếu bao bì/lô; sau đó thu thêm ảnh từ **camera và buồng chụp của máy**, gồm thuốc đúng, thuốc sai gần giống, viên lỗi và nhiều góc/mặt khi có thể. [Mẫu manifest và quy tắc chia](../../data/captured/README.md) đã có; hiện chưa có ảnh từ camera máy.
 2. Khóa trước tập đánh giá độc lập theo **viên vật lý, phiên chụp và ID thuốc lạ**. Đánh giá từng thuốc mục tiêu về nhận đúng, nhận nhầm thuốc khác, từ chối khi ảnh mờ/che khuất và lỗi chất lượng. Validation VAIPE đã xem nhiều lần chỉ còn dùng chẩn đoán.
 3. Chỉ sau khi hai cổng danh tính và lỗi qua tiêu chí của hệ thống, tích hợp camera, động cơ, cảm biến xác nhận rơi; đo độ trễ và thử dừng trước khi thả trên Raspberry Pi/cơ cấu thật. Giữ `ACCEPTED` tự động tắt đến lúc đó.
 
