@@ -9,15 +9,26 @@ export type Status = 'good' | 'warning' | 'serious' | 'critical' | 'neutral'
 type StatusLook = { status: Status; icon: IconName; label: string }
 
 /**
+ * `droppable` = nhãn này có lúc nào được phép thả viên xuống ô không.
+ *
+ * Lấy thẳng từ `decision_simulator`: WRONG_DRUG, MULTIPLE_PILLS và EMPTY_FRAME
+ * luôn trả `release_allowed=false`, nên máy không bao giờ thả chúng, nên cảm
+ * biến đường rơi không bao giờ có gì để xác nhận — số "đã xác nhận" của ba
+ * nhãn này vĩnh viễn bằng 0. Giao diện phải biết điều đó, nếu không nó sẽ hiện
+ * một số 0 to đùng ở ô "Sai thuốc" trong khi camera vừa bắt được một viên sai.
+ */
+type RouteLook = StatusLook & { droppable: boolean }
+
+/**
  * Năm ô đích là *trạng thái*, không phải năm chuỗi dữ liệu — nên dùng bảng màu
  * trạng thái, mỗi màu đi kèm icon và nhãn chữ.
  */
-export const ROUTE_LOOK: Record<Route, StatusLook> = {
-  ACCEPTED: { status: 'good', icon: 'check', label: 'Đúng, nguyên' },
-  DEFECTIVE: { status: 'warning', icon: 'alert', label: 'Sứt, vỡ' },
-  WRONG_DRUG: { status: 'critical', icon: 'ban', label: 'Sai thuốc' },
-  MULTIPLE_PILLS: { status: 'serious', icon: 'layers', label: 'Nhiều viên' },
-  EMPTY_FRAME: { status: 'neutral', icon: 'blank', label: 'Khung trống' },
+export const ROUTE_LOOK: Record<Route, RouteLook> = {
+  ACCEPTED: { status: 'good', icon: 'check', label: 'Đúng, nguyên', droppable: true },
+  DEFECTIVE: { status: 'warning', icon: 'alert', label: 'Sứt, vỡ', droppable: true },
+  WRONG_DRUG: { status: 'critical', icon: 'ban', label: 'Sai thuốc', droppable: false },
+  MULTIPLE_PILLS: { status: 'serious', icon: 'layers', label: 'Nhiều viên', droppable: false },
+  EMPTY_FRAME: { status: 'neutral', icon: 'blank', label: 'Khung trống', droppable: false },
 }
 
 export const BATCH_STATUS_LOOK: Record<BatchStatus, StatusLook> = {

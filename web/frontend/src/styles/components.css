@@ -698,3 +698,57 @@ pre {
   min-height: 100vh;
   color: var(--ink-muted);
 }
+
+/* Cặp nhãn – giá trị cho phần thông tin của một mẻ. */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+}
+
+.meta-grid dt {
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+  margin-bottom: var(--space-1);
+}
+
+.meta-grid dd {
+  margin: 0;
+  font-weight: 600;
+}
+
+/* Con so chinh cua mot me: da dem duoc bao nhieu vien dat. */
+.headline-count {
+  margin: 0 0 var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.headline-count strong {
+  font-size: var(--text-hero);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+  margin-right: var(--space-2);
+}
+
+/* Khung cho anh soi tung vien. Chua nhan duoc anh nen khung con trong.
+   Vien dut = chua co gi; vien lien = thiet bi da ghi duong dan anh, chi la
+   web chua tai duoc anh ve. Hai trang thai khac nhau that nen phai nhin ra. */
+.thumb {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 44px;
+  border: 1px dashed var(--hairline);
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  background: var(--surface-sunken);
+}
+
+.thumb.has-path {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--accent);
+}
