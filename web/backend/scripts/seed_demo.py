@@ -165,6 +165,36 @@ def reset(session) -> None:
     session.commit()
 
 
+def history_scenarios(rng: random.Random) -> list[dict]:
+    """Nhung me da xong cua hai tuan truoc, de trang Thong ke co hinh dang.
+
+    Nam me kia deu nam trong vai gio gan nhat, nen bieu do chi ra duy nhat mot
+    cot — khong kiem duoc gi ca. Lich nay bo ngay Chu nhat va vai ngay le, de
+    thay ca hai chuyen: ngay co so lieu, va ky rong van phai co mat trong bang.
+    """
+    out: list[dict] = []
+    for days_ago in range(1, 19):
+        if days_ago % 7 == 0 or days_ago in (4, 11):
+            continue  # ngay may khong chay
+        total = rng.randint(14, 38)
+        specials: dict[int, dict] = {}
+        for _ in range(rng.randint(1, 5)):
+            specials[rng.randrange(total)] = rng.choice([CHIPPED, WRONG_PILL, TWO_PILLS, EMPTY, BLURRY])
+        out.append(
+            {
+                'target': rng.choice(['MC-064', 'MC-091', 'MC-107']),
+                'status': BatchStatus.DONE,
+                'operator': rng.choice(['Thu Hà', 'Minh Quân']),
+                'note': 'Mẻ đã xong (dữ liệu lịch sử để xem trang Thống kê).',
+                'days_ago': days_ago,
+                'started_minutes_ago': rng.randint(120, 480),
+                'finished_minutes_ago': rng.randint(20, 110),
+                'observations': pattern(total, specials),
+            }
+        )
+    return out
+
+
 def seed(session, rng: random.Random) -> None:
     now = datetime.now(timezone.utc)
 
@@ -177,18 +207,22 @@ def seed(session, rng: random.Random) -> None:
         targets[spec['code']] = existing
     session.commit()
 
-    for scenario in SCENARIOS:
+    history = history_scenarios(rng)
+    for scenario in SCENARIOS + history:
+        # `days_ago` lui ca me ve mot ngay truoc do; cac moc phut van tinh tu
+        # nua dem hom do, nen me lich su khong bao gio roi vao tuong lai.
+        anchor = now - timedelta(days=scenario.get('days_ago', 0))
         started = (
-            now - timedelta(minutes=scenario['started_minutes_ago'])
+            anchor - timedelta(minutes=scenario['started_minutes_ago'])
             if 'started_minutes_ago' in scenario
             else None
         )
         finished = (
-            now - timedelta(minutes=scenario['finished_minutes_ago'])
+            anchor - timedelta(minutes=scenario['finished_minutes_ago'])
             if 'finished_minutes_ago' in scenario
             else None
         )
-        created = (started or now) - timedelta(minutes=rng.randint(1, 4))
+        created = (started or anchor) - timedelta(minutes=rng.randint(1, 4))
 
         batch = Batch(
             target_id=targets[scenario['target']].id,
@@ -204,7 +238,7 @@ def seed(session, rng: random.Random) -> None:
 
         observations = scenario['observations']
         leave_last = scenario.get('leave_last_unconfirmed', False)
-        at = started or now
+        at = started or anchor
         for index, observation in enumerate(observations, start=1):
             decision = decide(**observation)
             # May soi moi vien cach nhau vai giay; con so chi de truc thoi gian
@@ -232,10 +266,13 @@ def seed(session, rng: random.Random) -> None:
                 )
             )
         session.commit()
+        if scenario.get('days_ago'):
+            continue  # me lich su: khong in tung dong, se thanh mot man hinh day chu
         print(
             f'Me #{batch.id} [{scenario["status"].value}] {scenario["target"]}'
             f' — {len(observations)} lan soi'
         )
+    print(f'Them {len(history)} me da xong trong 18 ngay truoc, de xem trang Thong ke.')
 
 
 def main() -> int:
