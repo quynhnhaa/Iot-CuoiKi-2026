@@ -11,10 +11,18 @@ from sqlalchemy.orm import Session
 from app.models import Batch, BatchStatus
 
 # Chuyen trang thai hop le; khong cho nhay tuy y tu bat ky dashboard nao.
+#
+# PAUSED di duoc sang DONE: tam dung chi co nghia la may ngung nhan vien, khong
+# phai la me chua duoc phep ket thuc. Nguoi van hanh dung lai de xem khay, thay
+# da du, thi phai ket thuc duoc ngay — bat ho chay tiep roi moi dung duoc, hoac
+# huy ca me, la hai lua chon deu sai.
+#
+# DONE va ABORTED la hai cua cuoi: mot me da chot thi khong mo lai, vi so dem
+# cua no co the da duoc ghi di noi khac.
 ALLOWED_TRANSITIONS: dict[BatchStatus, set[BatchStatus]] = {
     BatchStatus.PENDING: {BatchStatus.RUNNING, BatchStatus.ABORTED},
     BatchStatus.RUNNING: {BatchStatus.PAUSED, BatchStatus.DONE, BatchStatus.ABORTED},
-    BatchStatus.PAUSED: {BatchStatus.RUNNING, BatchStatus.ABORTED},
+    BatchStatus.PAUSED: {BatchStatus.RUNNING, BatchStatus.DONE, BatchStatus.ABORTED},
     BatchStatus.DONE: set(),
     BatchStatus.ABORTED: set(),
 }

@@ -168,3 +168,33 @@ def test_batch_without_requested_count_is_an_open_count(client, roles):
     detail = client.get(f'/api/batches/{batch["id"]}', headers=roles['operator']).json()
     assert detail['requested_count'] is None
     assert detail['counters']['accepted_total'] == 0
+
+
+def test_paused_batch_can_be_finished_without_resuming(client, roles):
+    """Tam dung roi thay da du thi phai ket thuc duoc ngay.
+
+    Bat nguoi van hanh chay tiep roi moi dung duoc, hoac huy ca me de vut so da
+    dem, deu la dua ho vao duong cut. Tam dung chi co nghia la may ngung nhan
+    vien, khong phai la me chua duoc phep chot.
+    """
+    batch = create_batch(client, roles)
+    status_url = f'/api/batches/{batch["id"]}/status'
+
+    paused = client.patch(status_url, json={'status': 'paused'}, headers=roles['operator'])
+    assert paused.status_code == 200
+
+    done = client.patch(status_url, json={'status': 'done'}, headers=roles['operator'])
+    assert done.status_code == 200
+    assert done.json()['status'] == 'done'
+    assert done.json()['finished_at'] is not None
+
+
+def test_finished_batch_stays_finished(client, roles):
+    """Hai cua cuoi phai dong han: me da chot khong mo lai duoc tu dau ca."""
+    batch = create_batch(client, roles)
+    status_url = f'/api/batches/{batch["id"]}/status'
+    client.patch(status_url, json={'status': 'aborted'}, headers=roles['operator'])
+
+    for target in ('running', 'paused', 'done'):
+        response = client.patch(status_url, json={'status': target}, headers=roles['operator'])
+        assert response.status_code == 409, target
