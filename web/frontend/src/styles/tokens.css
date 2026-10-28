@@ -2,38 +2,62 @@
  * Design token. Mọi màu, khoảng cách và bóng đổ trong ứng dụng đều lấy từ đây —
  * không có hex rời rạc trong các file khác.
  *
- * Bảng màu lấy từ hướng dẫn dataviz đã được kiểm định: nền, mực, màu nhấn và
- * bốn màu trạng thái (good / warning / serious / critical). Màu trạng thái luôn
- * đi kèm icon và nhãn chữ, không bao giờ để màu tự mang nghĩa.
+ * Bảng màu y tế: #0099CF là màu thương hiệu, cùng #0D74B1, #1040C5, #101732,
+ * #B8ACAA và trắng.
+ *
+ * Ba màu xanh không phải ba lựa chọn thay nhau được, mà là ba bậc theo độ
+ * tương phản — đây là lý do nút bấm không mang đúng màu thương hiệu:
+ *
+ * * #0099CF — màu thương hiệu. Chữ trắng trên nền này chỉ đạt 3,25:1, dưới
+ *   ngưỡng 4,5:1, nên nó không được làm nền nút. Nó đi vào mảng loãng, nền
+ *   trang đăng nhập và màu nhấn của chế độ tối.
+ * * #0D74B1 — 5,06:1 với chữ trắng, nên đây mới là nền nút và màu viền focus.
+ * * #1040C5 — 8,2:1 trên nền sáng; dùng cho chữ và liên kết nằm trên mảng loãng.
+ *
+ * #B8ACAA là màu trung tính *ấm* duy nhất trong bảng. Giữ nguyên sự lệch nhiệt
+ * độ đó thay vì nắn nó thành xám xanh: chữ phụ và đường kẻ ấm hơn một chút làm
+ * nền xanh lạnh đỡ bị lạnh đều một khối.
+ *
+ * Bốn màu trạng thái (good / warning / serious / critical) KHÔNG đổi theo bảng
+ * này. Một bảng toàn xanh và xám không nói được "đạt" khác "hỏng" khác "sai
+ * thuốc"; đổi đỏ thành xanh là vứt đi thứ duy nhất mà màu trạng thái có nghĩa
+ * vụ phải nói. Màu trạng thái vẫn luôn đi kèm icon và nhãn chữ.
  */
 
 :root {
   color-scheme: light;
 
+  /* Màu thương hiệu — nguồn của mọi mảng loãng bên dưới */
+  --brand: #0099cf;
+
   /* Mặt phẳng */
-  --plane: #f9f9f7;
-  --surface: #fcfcfb;
+  --plane: #eaf2f7;
+  --surface: #f8fbfd;
   --surface-raised: #ffffff;
-  --surface-sunken: #f2f2ef;
-  --surface-hover: rgba(11, 11, 11, 0.035);
-  --surface-active: rgba(11, 11, 11, 0.06);
+  --surface-sunken: #e2ecf3;
+  --surface-hover: rgba(16, 23, 50, 0.045);
+  --surface-active: rgba(16, 23, 50, 0.075);
+  --scrim: rgba(16, 23, 50, 0.45);
 
   /* Mực */
-  --ink: #0b0b0b;
-  --ink-secondary: #52514e;
-  --ink-muted: #898781;
+  --ink: #101732;
+  --ink-secondary: #3c4766;
+  --ink-muted: #6e6663;
   --ink-on-accent: #ffffff;
 
-  /* Đường kẻ */
-  --border: rgba(11, 11, 11, 0.1);
-  --border-strong: #c3c2b7;
-  --hairline: #e1e0d9;
+  /* Đường kẻ. #B8ACAA nguyên bản chỉ đạt 2,1:1 trên nền sáng, dưới ngưỡng 3:1
+     cho viền ô nhập liệu, nên đường kẻ dùng hai bậc đậm hơn của chính nó. Ở
+     nền sáng, sắc xám ấm đó sống trong mảng loãng; đúng màu #B8ACAA thì làm
+     chữ phụ của chế độ tối, nơi nó đạt 8:1. */
+  --border: rgba(16, 23, 50, 0.12);
+  --border-strong: #8e817e;
+  --hairline: #d7e2ea;
 
-  /* Màu nhấn — slot 1 của bảng phân loại */
-  --accent: #2a78d6;
-  --accent-hover: #256abf;
-  --accent-ink: #184f95;
-  --accent-wash: rgba(42, 120, 214, 0.1);
+  /* Màu nhấn — ba bậc, xem phần đầu file */
+  --accent: #0d74b1;
+  --accent-hover: #0a5e90;
+  --accent-ink: #1040c5;
+  --accent-wash: color-mix(in srgb, var(--brand) 14%, transparent);
 
   /* Trạng thái */
   --good: #0ca30c;
@@ -48,8 +72,9 @@
   --critical: #d03b3b;
   --critical-ink: #a02020;
   --critical-wash: rgba(208, 59, 59, 0.12);
-  --neutral: #898781;
-  --neutral-wash: rgba(137, 135, 129, 0.14);
+  /* Dấu chấm trạng thái là hình, cần 3:1 với nền. */
+  --neutral: #9c8e8b;
+  --neutral-wash: rgba(184, 172, 170, 0.24);
 
   /* Khoảng cách — thang 4px */
   --space-1: 4px;
@@ -68,10 +93,10 @@
   --radius-lg: 14px;
   --radius-pill: 999px;
 
-  /* Bóng đổ */
-  --shadow-sm: 0 1px 2px rgba(11, 11, 11, 0.06);
-  --shadow: 0 1px 3px rgba(11, 11, 11, 0.08), 0 4px 12px rgba(11, 11, 11, 0.04);
-  --shadow-lg: 0 4px 10px rgba(11, 11, 11, 0.08), 0 16px 32px rgba(11, 11, 11, 0.1);
+  /* Bóng đổ — nhuốm màu mực của bảng, không phải đen trung tính */
+  --shadow-sm: 0 1px 2px rgba(16, 23, 50, 0.08);
+  --shadow: 0 1px 3px rgba(16, 23, 50, 0.1), 0 4px 12px rgba(16, 23, 50, 0.06);
+  --shadow-lg: 0 4px 10px rgba(16, 23, 50, 0.1), 0 16px 32px rgba(16, 23, 50, 0.14);
 
   /* Chữ */
   --font: system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -93,30 +118,37 @@
   --transition: 120ms ease;
 }
 
-/* Chế độ tối: chọn từng bước riêng cho nền tối, không đảo ngược tự động. */
+/* Chế độ tối: chọn từng bước riêng cho nền tối, không đảo ngược tự động.
+   Nền lấy thẳng #101732 của bảng màu, nên chế độ tối không phải màu xám bất kỳ
+   mà vẫn là màu của bảng. Ở đây #0099CF mới được làm màu nhấn: trên nền xanh
+   đậm nó đạt 5,4:1, còn #1040C5 thì chìm. */
 @media (prefers-color-scheme: dark) {
   :root:where(:not([data-theme='light'])) {
     color-scheme: dark;
 
-    --plane: #0d0d0d;
-    --surface: #1a1a19;
-    --surface-raised: #212120;
-    --surface-sunken: #141413;
-    --surface-hover: rgba(255, 255, 255, 0.045);
-    --surface-active: rgba(255, 255, 255, 0.08);
+    --plane: #0a0f20;
+    --surface: #101732;
+    --surface-raised: #182141;
+    --surface-sunken: #0c1228;
+    --surface-hover: rgba(255, 255, 255, 0.05);
+    --surface-active: rgba(255, 255, 255, 0.09);
+    --scrim: rgba(5, 8, 18, 0.62);
 
-    --ink: #f0efec;
-    --ink-secondary: #c3c2b7;
-    --ink-muted: #898781;
+    --ink: #f2f6fa;
+    --ink-secondary: #c2cadb;
+    --ink-muted: #b8acaa;
 
-    --border: rgba(255, 255, 255, 0.1);
-    --border-strong: #383835;
-    --hairline: #2c2c2a;
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: #626b8e;
+    --hairline: #222c4d;
 
-    --accent: #3987e5;
-    --accent-hover: #5598e7;
-    --accent-ink: #86b6ef;
-    --accent-wash: rgba(57, 135, 229, 0.16);
+    --accent: #0099cf;
+    --accent-hover: #2bb0e3;
+    /* Chữ trên nút đổi sang màu mực của bảng, không phải trắng: trắng trên
+       #0099CF chỉ đạt 3,25:1, còn #101732 trên nền đó đạt 5,4:1. */
+    --ink-on-accent: #101732;
+    --accent-ink: #5cc4ec;
+    --accent-wash: color-mix(in srgb, var(--brand) 22%, transparent);
 
     --good-ink: #0ca30c;
     --good-wash: rgba(12, 163, 12, 0.18);
@@ -126,10 +158,10 @@
     --serious-wash: rgba(236, 131, 90, 0.18);
     --critical-ink: #e66767;
     --critical-wash: rgba(208, 59, 59, 0.2);
-    --neutral-wash: rgba(137, 135, 129, 0.18);
+    --neutral-wash: rgba(184, 172, 170, 0.18);
 
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-    --shadow: 0 1px 3px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.5), 0 16px 32px rgba(0, 0, 0, 0.45);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 4px 10px rgba(0, 0, 0, 0.55), 0 16px 32px rgba(0, 0, 0, 0.5);
   }
 }
