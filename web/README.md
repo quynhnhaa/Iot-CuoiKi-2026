@@ -293,6 +293,27 @@ Các kiểm thử bám vào những ràng buộc dễ bị phá khi sửa về s
 
 `/api/ai-runs` **không có trang giao diện** — hai endpoint này còn đó để gọi trực tiếp khi cần, nhưng không hiện trong menu. Chúng đọc `model/runs/`, thư mục không commit lên Git, nên trên máy chưa chạy thí nghiệm kết quả sẽ trống.
 
+### Hình dạng của một lỗi
+
+`detail` **luôn là một chuỗi tiếng Việt**, ở mọi mã lỗi. Đây là một cam kết,
+không phải chuyện tình cờ: frontend làm `new ApiError(body.detail)`, nên nếu
+có endpoint nào trả `detail` dạng mảng thì màn hình sẽ hiện `[object Object]`
+— hỏng mà không hề báo hỏng.
+
+Lỗi kiểm tra từng trường (422) do pydantic sinh ra trước khi request vào tới
+code của backend, nên chúng được gom lại trong `app/api/validation.py`:
+
+```json
+{
+  "detail": "Tên đăng nhập: chưa điền; Mật khẩu: chưa điền",
+  "errors": [{"type": "missing", "loc": ["body", "username"], "msg": "Field required"}]
+}
+```
+
+`errors` giữ nguyên cấu trúc gốc của pydantic để gỡ rối; `detail` là câu cho
+người dùng đọc. Kiểu lỗi nào chưa có câu tiếng Việt thì rơi về `msg` gốc —
+thiếu dấu còn hơn bịa ra một câu sai nghĩa.
+
 ## Giới hạn đã biết
 
 - **Token nằm trong `localStorage`.** Đủ cho bản demo, nhưng một lỗi XSS trên trang này sẽ đọc được token. Chạy thật nên chuyển sang cookie `HttpOnly` kèm chống CSRF.

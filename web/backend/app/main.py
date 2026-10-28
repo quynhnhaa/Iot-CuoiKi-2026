@@ -7,9 +7,11 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
+from app.api.validation import validation_error_handler
 from app.config import get_settings
 from app.models import Base
 
@@ -34,6 +36,10 @@ app.add_middleware(
     allow_headers=['*'],
 )
 app.include_router(api_router)
+
+# Loi kiem tra truong cua pydantic khong di qua HTTPException, nen phai bat
+# rieng; xem app/api/validation.py.
+app.add_exception_handler(RequestValidationError, validation_error_handler)
 
 
 @app.get('/')
