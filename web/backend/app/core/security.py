@@ -24,7 +24,7 @@ TOTP_INTERVAL = 30
 
 
 class TokenError(Exception):
-    """Token khong hop le, sai loai hoac het han."""
+    """Token không hợp lệ, sai loai hoac het han."""
 
 
 # --- Mat khau -------------------------------------------------------------
@@ -146,10 +146,10 @@ def decode_token(token: str, *, expected_kind: TokenKind) -> dict:
     try:
         payload = jwt.decode(token, settings.secret_key, algorithms=[ALGORITHM])
     except jwt.ExpiredSignatureError as error:
-        raise TokenError('Token da het han') from error
+        raise TokenError('Token đã hết hạn') from error
     except jwt.PyJWTError as error:
-        raise TokenError('Token khong hop le') from error
+        raise TokenError('Token không hợp lệ') from error
     if payload.get('kind') != expected_kind:
         # Khong cho dung token cua buoc MFA de goi API thuong, va nguoc lai.
-        raise TokenError('Sai loai token')
+        raise TokenError('Sai loại token')
     return payload

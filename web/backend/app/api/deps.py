@@ -17,7 +17,7 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 UNAUTHENTICATED = HTTPException(
     status.HTTP_401_UNAUTHORIZED,
-    'Can dang nhap',
+    'Cần đăng nhập',
     headers={'WWW-Authenticate': 'Bearer'},
 )
 
@@ -34,7 +34,7 @@ def _active_user_from_token(token: str, session: Session, *, expected_kind: str)
         raise UNAUTHENTICATED
     if payload.get('ver') != user.token_version:
         # Mat khau da doi hoac 2FA da bi tat sau khi token nay duoc phat.
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Token da bi thu hoi')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Token đã bị thu hồi')
     return user
 
 
@@ -46,7 +46,7 @@ def get_current_user(
     if credentials is not None and credentials.credentials:
         user = _active_user_from_token(credentials.credentials, session, expected_kind='access')
         if user.requires_totp and not user.totp_enabled:
-            raise HTTPException(status.HTTP_403_FORBIDDEN, 'Tai khoan chua ghi danh xac thuc hai lop')
+            raise HTTPException(status.HTTP_403_FORBIDDEN, 'Tài khoản chưa ghi danh xác thực hai lớp')
         return user
 
     if x_api_key:
@@ -54,7 +54,7 @@ def get_current_user(
         for candidate in session.scalars(select(User).where(User.api_key_hash.is_not(None))):
             if candidate.is_active and api_keys_match(x_api_key, candidate.api_key_hash):
                 return candidate
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'API key khong hop le')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'API key không hợp lệ')
 
     raise UNAUTHENTICATED
 
@@ -81,7 +81,7 @@ def require_roles(*roles: Role):
         if Role(user.role) not in allowed:
             raise HTTPException(
                 status.HTTP_403_FORBIDDEN,
-                f'Vai tro "{Role(user.role).value}" khong duoc thuc hien viec nay',
+                f'Vai trò "{Role(user.role).value}" không được thực hiện việc này',
             )
         return user
 

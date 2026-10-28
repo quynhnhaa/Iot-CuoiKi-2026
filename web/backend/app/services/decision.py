@@ -21,11 +21,11 @@ def load_decision_simulator() -> ModuleType:
     path = get_settings().decision_simulator_path
     if not path.is_file():
         raise DecisionSimulatorUnavailable(
-            f'Khong tim thay {path}. Kiem tra bien moi truong WEB_MODEL_DIR.'
+            f'Không tìm thấy {path}. Kiểm tra biến môi trường WEB_MODEL_DIR.'
         )
     spec = importlib.util.spec_from_file_location('ai_decision_simulator', path)
     if spec is None or spec.loader is None:
-        raise DecisionSimulatorUnavailable(f'Khong nap duoc module tu {path}.')
+        raise DecisionSimulatorUnavailable(f'Không nạp được module từ {path}.')
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)

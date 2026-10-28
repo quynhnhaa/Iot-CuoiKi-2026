@@ -17,5 +17,5 @@ def list_runs() -> list[dict]:
 def run_events(name: str, limit: int = Query(200, ge=1, le=5000)) -> list[dict]:
     events = service.read_run_events(name, limit=limit)
     if not events:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Khong tim thay events.jsonl cho run nay')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Không tìm thấy events.jsonl cho run này')
     return events

@@ -89,7 +89,7 @@ def verify_recovery_code(
 ) -> TokenResponse:
     """Thay the lop thu hai khi mat thiet bi sinh ma."""
     if not user.totp_enabled:
-        raise HTTPException(status.HTTP_409_CONFLICT, 'Tai khoan chua bat xac thuc hai lop')
+        raise HTTPException(status.HTTP_409_CONFLICT, 'Tài khoản chưa bật xác thực hai lớp')
     try:
         service.consume_recovery_code(user, payload.recovery_code, session)
     except service.AuthError as error:
@@ -106,7 +106,7 @@ def enroll(
     if user.totp_enabled:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            'Tai khoan da bat xac thuc hai lop; nho quan tri vien dat lai',
+            'Tài khoản đã bật xác thực hai lớp; nhờ quản trị viên đặt lại',
         )
     secret, uri = service.start_enrollment(user, session)
     return EnrollmentResponse(secret=secret, otpauth_uri=uri)
@@ -142,6 +142,6 @@ def change_password(
 ) -> None:
     """Doi mat khau; moi token da phat bi thu hoi, ke ca token dang dung."""
     if not security.verify_password(payload.current_password, user.password_hash):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Mat khau hien tai khong dung')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Mật khẩu hiện tại không đúng')
     user.password_hash = security.hash_password(payload.new_password)
     service.revoke_tokens(user, session)

@@ -80,7 +80,7 @@ def test_totp_code_cannot_be_replayed(client):
     )
     # Ma dung o buoc xac nhan ghi danh da chiem buoc thoi gian nay.
     assert first.status_code == 401
-    assert 'da duoc dung' in first.json()['detail']
+    assert 'đã được dùng' in first.json()['detail']
 
 
 def test_recovery_code_works_once(client):

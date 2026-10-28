@@ -35,10 +35,10 @@ def verify_command_secret(x_command_secret: str | None = Header(default=None)) -
     if not configured:
         raise HTTPException(
             status.HTTP_503_SERVICE_UNAVAILABLE,
-            'Kenh lenh ThingsBoard chua duoc cau hinh',
+            'Kênh lệnh ThingsBoard chưa được cấu hình',
         )
     if not x_command_secret or not secrets.compare_digest(x_command_secret, configured):
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Bi mat lenh khong hop le')
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, 'Bí mật lệnh không hợp lệ')
 
 
 @router.post('/commands', response_model=CommandResponse, dependencies=[Depends(verify_command_secret)])
@@ -48,11 +48,11 @@ def handle_command(
 ) -> CommandResponse:
     target = COMMAND_TO_STATUS.get(payload.command)
     if target is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Lenh khong hieu: {payload.command}')
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, f'Lệnh không hiểu: {payload.command}')
 
     batch = session.get(Batch, payload.batch_id)
     if batch is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Khong tim thay me dem')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Không tìm thấy mẻ đếm')
 
     try:
         batch = apply_status(batch, target, session)

@@ -50,12 +50,12 @@ def clear_failures(user: User, session: Session) -> None:
 def authenticate_password(user: User | None, password: str, session: Session) -> User:
     """Lop thu nhat. Khong tiet lo tai khoan co ton tai hay khong."""
     if user is None or not user.is_active or not user.requires_totp:
-        raise AuthError('Ten dang nhap hoac mat khau khong dung')
+        raise AuthError('Tên đăng nhập hoặc mật khẩu không đúng')
     if is_locked(user):
-        raise AccountLocked('Tai khoan dang bi tam khoa; thu lai sau')
+        raise AccountLocked('Tài khoản đang bị tạm khoá; thử lại sau')
     if not security.verify_password(password, user.password_hash):
         register_failure(user, session)
-        raise AuthError('Ten dang nhap hoac mat khau khong dung')
+        raise AuthError('Tên đăng nhập hoặc mật khẩu không đúng')
     clear_failures(user, session)
     return user
 
@@ -63,17 +63,17 @@ def authenticate_password(user: User | None, password: str, session: Session) ->
 def consume_totp(user: User, code: str, session: Session) -> None:
     """Lop thu hai. Mot ma chi dung duoc mot lan."""
     if not user.totp_secret:
-        raise AuthError('Tai khoan chua ghi danh xac thuc hai lop')
+        raise AuthError('Tài khoản chưa ghi danh xác thực hai lớp')
     if is_locked(user):
-        raise AccountLocked('Tai khoan dang bi tam khoa; thu lai sau')
+        raise AccountLocked('Tài khoản đang bị tạm khoá; thử lại sau')
     timestep = security.find_totp_timestep(user.totp_secret, code)
     if timestep is None:
         register_failure(user, session)
-        raise AuthError('Ma xac thuc khong dung')
+        raise AuthError('Mã xác thực không đúng')
     if user.last_totp_timestep is not None and timestep <= user.last_totp_timestep:
         # Ma dung nhung da duoc dung roi: chan phat lai ma bi nhin thay.
         register_failure(user, session)
-        raise AuthError('Ma nay da duoc dung; cho ma tiep theo')
+        raise AuthError('Mã này đã được dùng; chờ mã tiếp theo')
     user.last_totp_timestep = timestep
     clear_failures(user, session)
 
@@ -81,14 +81,14 @@ def consume_totp(user: User, code: str, session: Session) -> None:
 def consume_recovery_code(user: User, code: str, session: Session) -> None:
     """Dung khi mat thiet bi sinh ma. Moi ma chi co gia tri mot lan."""
     if is_locked(user):
-        raise AccountLocked('Tai khoan dang bi tam khoa; thu lai sau')
+        raise AccountLocked('Tài khoản đang bị tạm khoá; thử lại sau')
     for stored in user.recovery_codes:
         if stored.used_at is None and security.verify_recovery_code(code, stored.code_hash):
             stored.used_at = _now()
             clear_failures(user, session)
             return
     register_failure(user, session)
-    raise AuthError('Ma du phong khong dung hoac da duoc dung')
+    raise AuthError('Mã dự phòng không đúng hoặc đã được dùng')
 
 
 def start_enrollment(user: User, session: Session) -> tuple[str, str]:
@@ -102,11 +102,11 @@ def start_enrollment(user: User, session: Session) -> tuple[str, str]:
 def confirm_enrollment(user: User, code: str, session: Session) -> list[str]:
     """Xac nhan ghi danh, bat 2FA va phat bo ma du phong moi."""
     if not user.totp_secret:
-        raise AuthError('Chua co phien ghi danh nao; bat dau lai')
+        raise AuthError('Chưa có phiên ghi danh nào; bắt đầu lại')
     timestep = security.find_totp_timestep(user.totp_secret, code)
     if timestep is None:
         register_failure(user, session)
-        raise AuthError('Ma xac thuc khong dung')
+        raise AuthError('Mã xác thực không đúng')
 
     settings = get_settings()
     user.totp_enabled = True

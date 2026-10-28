@@ -27,7 +27,7 @@ def queue_batch_telemetry(background_tasks, batch, session) -> None:
 def get_batch_or_404(batch_id: int, session: Session) -> Batch:
     batch = session.get(Batch, batch_id)
     if batch is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Khong tim thay me dem')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Không tìm thấy mẻ đếm')
     return batch
 
 
@@ -42,7 +42,7 @@ def list_batches(session: Session = Depends(get_session)) -> list[Batch]:
 )
 def create_batch(payload: BatchCreate, session: Session = Depends(get_session)) -> Batch:
     if session.get(Target, payload.target_id) is None:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Mau chuan khong ton tai')
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, 'Mẫu chuẩn không tồn tại')
     batch = Batch(**payload.model_dump())
     session.add(batch)
     session.commit()

@@ -29,7 +29,7 @@ def create_event(
     """Ghi mot quan sat; quyet dinh do decision_simulator cua nhanh AI tra ve."""
     batch = get_batch_or_404(batch_id, session)
     if BatchStatus(batch.status) is not BatchStatus.RUNNING:
-        raise HTTPException(status.HTTP_409_CONFLICT, 'Me dem khong o trang thai running')
+        raise HTTPException(status.HTTP_409_CONFLICT, 'Mẻ đếm không ở trạng thái running')
 
     observation = payload.model_dump(exclude={'image_path'})
     try:
@@ -67,11 +67,11 @@ def confirm_drop(
     """Cam bien duong roi xac nhan vien da roi; chi khi do bo dem moi tang."""
     event = session.get(PillEvent, event_id)
     if event is None or event.batch_id != batch_id:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Khong tim thay su kien')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Không tìm thấy sự kiện')
     if payload.drop_confirmed and not event.release_allowed:
         raise HTTPException(
             status.HTTP_409_CONFLICT,
-            'Su kien nay chua duoc phep tha vien, khong the xac nhan da roi',
+            'Sự kiện này chưa được phép thả viên, không thể xác nhận đã rơi',
         )
     event.drop_confirmed = payload.drop_confirmed
     session.commit()

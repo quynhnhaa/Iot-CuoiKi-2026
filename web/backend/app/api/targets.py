@@ -27,7 +27,7 @@ def create_target(payload: TargetCreate, session: Session = Depends(get_session)
         session.commit()
     except IntegrityError:
         session.rollback()
-        raise HTTPException(status.HTTP_409_CONFLICT, f'Ma mau chuan "{payload.code}" da ton tai') from None
+        raise HTTPException(status.HTTP_409_CONFLICT, f'Mã mẫu chuẩn "{payload.code}" đã tồn tại') from None
     session.refresh(target)
     return target
 
@@ -36,5 +36,5 @@ def create_target(payload: TargetCreate, session: Session = Depends(get_session)
 def get_target(target_id: int, session: Session = Depends(get_session)) -> Target:
     target = session.get(Target, target_id)
     if target is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Khong tim thay mau chuan')
+        raise HTTPException(status.HTTP_404_NOT_FOUND, 'Không tìm thấy mẫu chuẩn')
     return target
