@@ -66,6 +66,31 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   return response.json() as Promise<T>
 }
 
+/**
+ * Tải một file về. Không dùng thẻ `<a href>` được: endpoint cần header
+ * `Authorization`, mà thẻ `<a>` thì không gắn header nào. Nên phải fetch lấy
+ * blob rồi mới dựng link tạm.
+ */
+async function requestFile(path: string): Promise<{ blob: Blob; filename: string }> {
+  const bearer = tokenStore.read()
+  const response = await fetch(`${BASE}${path}`, {
+    headers: bearer ? { Authorization: `Bearer ${bearer}` } : {},
+  })
+
+  if (response.status === 401) {
+    tokenStore.write(null)
+    onUnauthorized?.()
+  }
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    throw new ApiError(body?.detail ?? `Lỗi ${response.status}`, response.status)
+  }
+
+  const disposition = response.headers.get('content-disposition') ?? ''
+  const match = /filename="([^"]+)"/.exec(disposition)
+  return { blob: await response.blob(), filename: match?.[1] ?? 'thong-ke.csv' }
+}
+
 // --- Xác thực ---------------------------------------------------------------
 
 export type Role = 'admin' | 'operator' | 'viewer' | 'machine'
@@ -170,6 +195,47 @@ export type User = {
 
 export type UserCreated = User & { api_key: string | null }
 
+// --- Thống kê ---------------------------------------------------------------
+
+export type StatsPeriod = 'day' | 'week' | 'month'
+
+export type StatsTotals = {
+  batches: number
+  observed: Record<Route, number>
+  confirmed: Record<Route, number>
+  /** Tổng số lần camera soi, kể cả lần bị loại ngay từ ảnh. */
+  observed_total: number
+  /** Viên đã rơi có cảm biến xác nhận, kể cả viên loại. */
+  confirmed_total: number
+  /** Chỉ viên đạt; đây mới là số viên lấy được. */
+  accepted_total: number
+}
+
+/** Một kỳ: một ngày, một tuần hoặc một tháng. */
+export type StatsRow = StatsTotals & {
+  /** Ngày đầu kỳ, dạng ISO — dùng làm khoá, không phải để hiện. */
+  key: string
+  /** Chuỗi hiện cho người đọc: '28/10/2026', 'Tuần 44/2026 (26/10 - 01/11)'. */
+  label: string
+}
+
+export type StatsResponse = {
+  period: StatsPeriod
+  from: string
+  to: string
+  rows: StatsRow[]
+  totals: StatsTotals
+}
+
+export type StatsQuery = { period: StatsPeriod; from?: string; to?: string }
+
+function statsQuery({ period, from, to }: StatsQuery): string {
+  const params = new URLSearchParams({ period })
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  return params.toString()
+}
+
 export const api = {
   health: () => request<Record<string, unknown>>('/health', { token: null }),
 
@@ -246,6 +312,9 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ drop_confirmed: dropConfirmed }),
     }),
+
+  getStats: (query: StatsQuery) => request<StatsResponse>(`/stats?${statsQuery(query)}`),
+  downloadStatsCsv: (query: StatsQuery) => requestFile(`/stats/export.csv?${statsQuery(query)}`),
 
   listUsers: () => request<User[]>('/users'),
   createUser: (payload: {

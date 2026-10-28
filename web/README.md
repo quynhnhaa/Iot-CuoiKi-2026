@@ -150,6 +150,33 @@ cd web/backend && .venv/Scripts/python migrations/001_requested_count_optional.p
 
 Script dựng lại bảng `batches` cho `requested_count` nhận `NULL`; `users`, `targets` và `pill_events` không bị đụng tới nên tài khoản và mã TOTP còn nguyên. Chạy lại nhiều lần không sao.
 
+## Thống kê theo ngày, tuần, tháng
+
+Trang **Thống kê** gộp số viên đã qua máy theo kỳ, và cho tải cùng bảng đó về
+dạng CSV. Ba quyết định đáng nhớ:
+
+**Mốc thời gian tính theo giờ Việt Nam, không phải UTC.** CSDL lưu mốc UTC; một
+mẻ chạy lúc 06:00 ngày 28 giờ Việt Nam được ghi là 23:00 ngày 27 giờ UTC. Gộp
+theo UTC thì số liệu của ca sáng rơi sang ngày hôm trước — bảng vẫn đầy số, vẫn
+cộng đúng tổng, chỉ có điều đặt nhầm dòng. Dùng offset cố định `+07:00` chứ
+không dùng `zoneinfo`: Việt Nam không có giờ mùa hè và giữ UTC+7 từ 1975, nên
+offset cố định là đúng tuyệt đối ở đây, lại không kéo theo gói `tzdata` mà
+Windows không có sẵn.
+
+**Kỳ không có số liệu vẫn có mặt trong bảng.** Một bảng nhảy từ ngày 12 sang
+ngày 15 khiến người đọc tưởng ngày 13, 14 mất dữ liệu, trong khi thật ra máy
+không chạy. Những dòng đó được làm mờ, không bị bỏ đi.
+
+**File CSV mở đầu bằng BOM.** Excel trên Windows không tự đoán ra UTF-8; thiếu
+BOM thì "Sứt, vỡ" mở ra thành `Sá»©t, vá»¡`. Trình đọc khác bỏ qua byte này.
+
+Việc đếm từng nhãn không viết lại ở đây: mỗi nhóm sự kiện được đưa cho
+`counters.summarize`, đúng hàm mà trang chi tiết mẻ và ThingsBoard đang dùng.
+
+Gộp bằng Python chứ không bằng SQL. Số sự kiện của một đồ án có quy mô nghìn, và
+một câu `GROUP BY` có dịch múi giờ sẽ khác nhau giữa SQLite và Postgres. Nếu sau
+này dữ liệu lên hàng triệu dòng thì `services/stats.py` là chỗ phải viết lại.
+
 ## Logic ba nhãn không được viết lại ở đây
 
 `ACCEPTED` / `DEFECTIVE` / `WRONG_DRUG` do [`model/src/common/decision_simulator.py`](../model/src/common/decision_simulator.py) quyết định. Backend nạp đúng file đó theo đường dẫn ([`app/services/decision.py`](backend/app/services/decision.py)) và chỉ gọi `decide`. Bản sao thứ hai của logic này sẽ lệch khỏi bản đã có kiểm thử, nên không có bản sao nào.
@@ -167,7 +194,7 @@ web/
 │   │   ├── core/       security.py: bcrypt, JWT, TOTP, API key
 │   │   ├── models/     ORM: User, RecoveryCode, Target, Batch, PillEvent
 │   │   ├── schemas/    pydantic request/response
-│   │   ├── services/   auth, decision (nạp từ nhánh AI), counters, ai_runs
+│   │   ├── services/   auth, decision (nạp từ nhánh AI), counters, stats, ai_runs
 │   │   ├── config.py
 │   │   ├── db.py
 │   │   └── main.py
@@ -180,13 +207,13 @@ web/
         │               components — không có hex rời rạc ngoài tokens.css
         ├── components/ Icon, UserMenu, ui.tsx (Card, Badge, Tile, Alert…)
         ├── lib/        api.ts, auth.tsx (AuthProvider, RoleGate)
-        └── pages/      LoginPage, BatchesPage, BatchDetailPage, TargetsPage,
-                        UsersPage
+        └── pages/      LoginPage, BatchesPage, BatchDetailPage, StatsPage,
+                        TargetsPage, UsersPage
 ```
 
 ## Giao diện
 
-Menu bên trái chia hai nhóm — **Vận hành** (Mẻ đếm, Mẫu chuẩn) và **Quản trị** (Tài khoản, chỉ admin thấy). Dưới 880px menu thu thành ngăn trượt mở bằng nút ở thanh trên. Tài khoản và nút đăng xuất nằm trong menu người dùng ở góc phải.
+Menu bên trái chia hai nhóm — **Vận hành** (Mẻ đếm, Thống kê, Mẫu chuẩn) và **Quản trị** (Tài khoản, chỉ admin thấy). Dưới 880px menu thu thành ngăn trượt mở bằng nút ở thanh trên. Tài khoản và nút đăng xuất nằm trong menu người dùng ở góc phải.
 
 Màu lấy từ bảng đã kiểm định cho trực quan hoá dữ liệu: bốn màu trạng thái (good / warning / serious / critical) dùng cho năm ô đích và trạng thái mẻ, **mỗi màu luôn đi kèm icon và nhãn chữ** nên không bao giờ để màu tự mang nghĩa. Chế độ tối là một bộ giá trị chọn riêng cho nền tối, không phải đảo ngược tự động.
 
@@ -262,6 +289,8 @@ Các kiểm thử bám vào những ràng buộc dễ bị phá khi sửa về s
 - **Phân quyền** (`test_authorization.py`): mọi endpoint từ chối gọi vô danh, viewer không ghi được, operator không quản trị tài khoản, admin không ghi kết quả soi viên, tài khoản máy chỉ ghi được kết quả, key cũ hết hiệu lực sau khi phát key mới, admin không tự khoá mình ra ngoài.
 - **ThingsBoard** (`test_thingsboard.py`): tắt mặc định thì không gửi gì, telemetry tách tên `confirmed_*`/`observed_*`, ThingsBoard sập không làm hỏng mẻ đang chạy, thiếu bí mật thì kênh lệnh đóng chứ không mở, lệnh từ dashboard theo đúng bảng chuyển trạng thái của web.
 - **Luồng mẻ đếm** (`test_batch_flow.py`): danh tính chưa xác minh ra `WRONG_DRUG`, bộ đếm chỉ tăng sau xác nhận rơi, không xác nhận rơi khi chưa được phép thả, không ghi sự kiện khi mẻ không `running`, không nhảy trạng thái tuỳ ý, viên loại có rơi nhưng không tính vào tiến độ.
+- **Thống kê** (`test_stats.py`): sự kiện lúc 23:30 UTC thuộc về ngày hôm sau theo giờ Việt Nam, kỳ rỗng vẫn có mặt, tuần bắt đầu thứ Hai, dòng tổng bằng tổng các dòng, khoảng ngược hoặc quá rộng bị từ chối, file CSV có BOM và không có cột “đã xác nhận” cho ba đường không bao giờ được thả.
+- **Lỗi kiểm tra trường** (`test_validation.py`): `detail` luôn là chuỗi chứ không phải mảng, tên trường hiện bằng nhãn người đọc hiểu, JSON hỏng không bịa ra tên trường.
 
 ## API
 
@@ -288,6 +317,8 @@ Các kiểm thử bám vào những ràng buộc dễ bị phá khi sửa về s
 | POST | `/api/batches/{id}/events` | machine / operator | ghi quan sát; chạy `decide` |
 | PATCH | `/api/batches/{id}/events/{event_id}/drop` | machine / operator | cảm biến xác nhận viên đã rơi |
 | POST | `/api/thingsboard/commands` | bí mật chia sẻ | lệnh start/pause/stop từ dashboard |
+| GET | `/api/stats` | đã đăng nhập | gộp theo ngày / tuần / tháng |
+| GET | `/api/stats/export.csv` | đã đăng nhập | cùng bảng đó, tải về dạng CSV |
 | GET | `/api/ai-runs` | đã đăng nhập | các lần chạy trong `model/runs/pipeline/` |
 | GET | `/api/ai-runs/{name}/events` | đã đăng nhập | `events.jsonl` của một lần chạy |
 

@@ -11,6 +11,7 @@ type NavEntry = { to: string; label: string; icon: IconName; roles?: Role[] }
 
 const NAV: NavEntry[] = [
   { to: '/batches', label: 'Mẻ đếm', icon: 'batches' },
+  { to: '/stats', label: 'Thống kê', icon: 'chart' },
   { to: '/targets', label: 'Mẫu chuẩn', icon: 'targets' },
   { to: '/users', label: 'Tài khoản', icon: 'users', roles: ['admin'] },
 ]

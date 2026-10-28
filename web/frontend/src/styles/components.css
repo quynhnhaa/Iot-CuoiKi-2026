@@ -732,3 +732,64 @@ pre {
   margin-right: var(--space-2);
 }
 
+
+/* Chon ky: ba lua chon loai tru nhau, nen la mot nhom nut dinh lien chu khong
+   phai ba nut roi — hinh dang noi ngay la "chon mot trong ba". */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--surface-sunken);
+  margin-bottom: var(--space-4);
+}
+
+.segment {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-size: var(--text-base);
+  padding: var(--space-2) var(--space-4);
+  border-radius: calc(var(--radius) - 3px);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.segment:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.segment.active {
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Ky khong co so lieu. Van phai co mat trong bang — bo di thi nguoi doc tuong
+   mat du lieu — nhung mo di de mat luot qua nhung ngay may khong chay. */
+.row-quiet td {
+  color: var(--ink-muted);
+}
+
+tfoot td {
+  border-top: 2px solid var(--hairline);
+  font-weight: 600;
+  color: var(--ink);
+  padding: var(--space-3) var(--space-4);
+}
+
+.spinner.sm {
+  width: 13px;
+  height: 13px;
+  border-width: 1.5px;
+}

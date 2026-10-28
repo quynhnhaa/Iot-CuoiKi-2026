@@ -21,6 +21,8 @@ export type IconName =
   | 'copy'
   | 'chevron'
   | 'inbox'
+  | 'chart'
+  | 'download'
 
 const PATHS: Record<IconName, JSX.Element> = {
   batches: (
@@ -104,6 +106,22 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   chevron: <path d="M6 9l6 6 6-6" />,
+  chart: (
+    <>
+      <path d="M4 20V4" />
+      <path d="M4 20h16" />
+      <rect x="7.5" y="12" width="3" height="5" rx="0.6" />
+      <rect x="13" y="8" width="3" height="9" rx="0.6" />
+      <rect x="18" y="14.5" width="3" height="2.5" rx="0.6" />
+    </>
+  ),
+  download: (
+    <>
+      <path d="M12 4v10" />
+      <path d="M8 11l4 4 4-4" />
+      <path d="M4.5 18.5h15" />
+    </>
+  ),
   inbox: (
     <>
       <path d="M3 13l2.6-7.2A2 2 0 0 1 7.5 4.5h9a2 2 0 0 1 1.9 1.3L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
