@@ -22,17 +22,16 @@ def roles(client):
     }
 
 
-def create_batch(client, roles, requested_count=10, start=True):
+def create_batch(client, roles, requested_count=None, start=True):
     target = client.post(
         '/api/targets',
         json={'code': 'KEO-TRANG-TRON', 'name': 'Vien mo phong trang tron'},
         headers=roles['admin'],
     ).json()
-    batch = client.post(
-        '/api/batches',
-        json={'target_id': target['id'], 'requested_count': requested_count},
-        headers=roles['operator'],
-    ).json()
+    payload = {'target_id': target['id']}
+    if requested_count is not None:
+        payload['requested_count'] = requested_count
+    batch = client.post('/api/batches', json=payload, headers=roles['operator']).json()
     if start:
         client.patch(
             f'/api/batches/{batch["id"]}/status',
@@ -114,3 +113,58 @@ def test_invalid_status_transition_rejected(client, roles):
         f'/api/batches/{batch["id"]}/status', json={'status': 'running'}, headers=roles['operator']
     )
     assert response.status_code == 409
+
+
+def test_defective_pill_drops_but_is_not_progress(client, roles):
+    """Vien loai cung roi va cung duoc xac nhan, nhung khong phai mot vien da lay.
+
+    `decision_simulator` tra accepted_count_increment = 0 cho vien loai, nen
+    thanh tien do phai doc `accepted_total`, khong phai `confirmed_total`.
+    """
+    batch = create_batch(client, roles)
+    ready = {'identity_gate_validated': True, 'hardware_ready': True}
+
+    defective = client.post(
+        f'/api/batches/{batch["id"]}/events',
+        json={**NORMAL_PILL, **ready, 'defect_status': 'defective'},
+        headers=roles['operator'],
+    ).json()
+    assert defective['route'] == 'DEFECTIVE'
+    assert defective['release_allowed'] is True
+
+    client.patch(
+        f'/api/batches/{batch["id"]}/events/{defective["id"]}/drop',
+        json={'drop_confirmed': True},
+        headers=roles['operator'],
+    )
+    counters = client.get(f'/api/batches/{batch["id"]}', headers=roles['operator']).json()[
+        'counters'
+    ]
+    assert counters['confirmed_total'] == 1
+    assert counters['accepted_total'] == 0
+
+    good = client.post(
+        f'/api/batches/{batch["id"]}/events',
+        json={**NORMAL_PILL, **ready},
+        headers=roles['operator'],
+    ).json()
+    client.patch(
+        f'/api/batches/{batch["id"]}/events/{good["id"]}/drop',
+        json={'drop_confirmed': True},
+        headers=roles['operator'],
+    )
+    counters = client.get(f'/api/batches/{batch["id"]}', headers=roles['operator']).json()[
+        'counters'
+    ]
+    assert counters['confirmed_total'] == 2
+    assert counters['accepted_total'] == 1
+
+
+def test_batch_without_requested_count_is_an_open_count(client, roles):
+    """Khong phai me nao cung biet truoc so vien; de trong phai la hop le."""
+    batch = create_batch(client, roles)
+    assert batch['requested_count'] is None
+
+    detail = client.get(f'/api/batches/{batch["id"]}', headers=roles['operator']).json()
+    assert detail['requested_count'] is None
+    assert detail['counters']['accepted_total'] == 0

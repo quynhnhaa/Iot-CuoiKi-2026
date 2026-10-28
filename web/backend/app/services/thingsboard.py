@@ -63,15 +63,23 @@ def build_batch_telemetry(batch: Batch, counters: dict[str, Any]) -> dict[str, A
     `observed_*` là kết luận của camera trước khi viên rơi. Hai nhóm được đặt
     tên tách bạch để không ai đọc nhầm trên dashboard.
 
+    Widget tiến độ trên dashboard phải đọc `accepted_total`, không phải
+    `confirmed_total`: viên loại cũng rơi và cũng được cảm biến xác nhận, nhưng
+    không được tính là đã lấy được một viên.
+
     Nhận `counters` từ bên ngoài thay vì tự đọc `batch.events`: hàm này chạy
     trong lúc request còn phiên DB, rồi payload mới được gửi đi ở nền.
     """
     payload: dict[str, Any] = {
         'batch_id': batch.id,
         'batch_status': str(batch.status),
-        'requested_count': batch.requested_count,
         'confirmed_total': counters['confirmed_total'],
+        'accepted_total': counters['accepted_total'],
     }
+    # Me dem mo khong co so dich; khong gui khoa rong de widget khong ve
+    # mot thanh tien do khong co mau so.
+    if batch.requested_count is not None:
+        payload['requested_count'] = batch.requested_count
     for route, count in counters['confirmed'].items():
         payload[f'confirmed_{route.lower()}'] = count
     for route, count in counters['observed'].items():

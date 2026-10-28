@@ -216,3 +216,18 @@ def test_command_on_missing_batch(client, command_secret):
         headers={'X-Command-Secret': command_secret},
     )
     assert response.status_code == 404
+
+
+def test_open_batch_sends_no_requested_count(client, roles, recorder):
+    """Me dem mo khong co mau so, nen dashboard khong duoc nhan mot khoa rong."""
+    target = client.post(
+        '/api/targets', json={'code': 'KEO-MO', 'name': 'Dem mo'}, headers=roles['admin']
+    ).json()
+    batch = client.post(
+        '/api/batches', json={'target_id': target['id']}, headers=roles['operator']
+    ).json()
+    client.patch(
+        f'/api/batches/{batch["id"]}/status', json={'status': 'running'}, headers=roles['operator']
+    )
+    _, payload = recorder.sent[-1]
+    assert 'requested_count' not in payload

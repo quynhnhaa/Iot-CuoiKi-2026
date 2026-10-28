@@ -7,7 +7,9 @@ from app.models.batch import BatchStatus
 
 class BatchCreate(BaseModel):
     target_id: int
-    requested_count: int = Field(gt=0)
+    # De trong = dem mo. Co so thi day chi la dich de nhin, khong phai mot
+    # cai cua: cham den so do me van nhan tiep su kien.
+    requested_count: int | None = Field(default=None, gt=0)
     operator: str | None = None
     note: str | None = None
 
@@ -17,7 +19,10 @@ class BatchCounters(BaseModel):
 
     observed: dict[str, int]
     confirmed: dict[str, int]
+    # Moi vien da roi co xac nhan, ke ca vien loai.
     confirmed_total: int
+    # Chi vien dat; day moi la tien do so voi requested_count.
+    accepted_total: int
 
 
 class BatchRead(BaseModel):
@@ -25,7 +30,7 @@ class BatchRead(BaseModel):
 
     id: int
     target_id: int
-    requested_count: int
+    requested_count: int | None
     status: BatchStatus
     operator: str | None
     note: str | None

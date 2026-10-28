@@ -9,7 +9,6 @@ export function BatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([])
   const [targets, setTargets] = useState<Target[]>([])
   const [targetId, setTargetId] = useState<number | ''>('')
-  const [requestedCount, setRequestedCount] = useState(10)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -28,7 +27,7 @@ export function BatchesPage() {
   async function createBatch() {
     if (targetId === '') return
     try {
-      await api.createBatch({ target_id: targetId, requested_count: requestedCount })
+      await api.createBatch({ target_id: targetId })
       setError(null)
       await reload()
     } catch (err) {
@@ -42,7 +41,7 @@ export function BatchesPage() {
     <div className="stack">
       <PageHeader
         title="Mẻ đếm"
-        description="Mỗi mẻ gắn với một loại viên chuẩn và số viên cần lấy."
+        description="Mỗi mẻ gắn với một loại viên chuẩn; đếm đến khi người vận hành bấm kết thúc."
       />
 
       {error && (
@@ -64,21 +63,16 @@ export function BatchesPage() {
                 ))}
               </select>
             </Field>
-            <Field label="Số viên cần lấy">
-              <input
-                type="number"
-                min={1}
-                value={requestedCount}
-                onChange={(e) => setRequestedCount(Number(e.target.value))}
-              />
-            </Field>
           </div>
+          <p className="hint">
+            Mẻ đếm đến khi người vận hành bấm kết thúc; không cần biết trước số viên.
+          </p>
           <div className="actions">
             <button className="btn" onClick={() => void createBatch()} disabled={targetId === ''}>
               Tạo mẻ
             </button>
           </div>
-          {targets.length === 0 && (
+          {!loading && targets.length === 0 && (
             <p className="hint">Chưa có mẫu chuẩn nào. Thêm ở trang Mẫu chuẩn trước.</p>
           )}
         </Card>
@@ -103,7 +97,6 @@ export function BatchesPage() {
                 <tr>
                   <th>Mẻ</th>
                   <th>Mẫu chuẩn</th>
-                  <th className="num">Số viên</th>
                   <th>Trạng thái</th>
                   <th>Tạo lúc</th>
                 </tr>
@@ -115,7 +108,6 @@ export function BatchesPage() {
                       <Link to={`/batches/${batch.id}`}>Mẻ #{batch.id}</Link>
                     </td>
                     <td>{targetOf(batch)?.code ?? `#${batch.target_id}`}</td>
-                    <td className="num">{batch.requested_count}</td>
                     <td>
                       <BatchStatusBadge status={batch.status} />
                     </td>

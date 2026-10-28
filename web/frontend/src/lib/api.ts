@@ -112,7 +112,8 @@ export type BatchStatus = 'pending' | 'running' | 'paused' | 'done' | 'aborted'
 export type Batch = {
   id: number
   target_id: number
-  requested_count: number
+  /** null = mẻ đếm mở: không biết trước số viên. */
+  requested_count: number | null
   status: BatchStatus
   operator: string | null
   note: string | null
@@ -126,7 +127,10 @@ export type Route = 'EMPTY_FRAME' | 'MULTIPLE_PILLS' | 'WRONG_DRUG' | 'DEFECTIVE
 export type BatchCounters = {
   observed: Record<Route, number>
   confirmed: Record<Route, number>
+  /** Mọi viên đã rơi có xác nhận, kể cả viên loại. */
   confirmed_total: number
+  /** Chỉ viên đạt; đây mới là tiến độ so với số viên cần lấy. */
+  accepted_total: number
 }
 
 export type BatchDetail = Batch & { counters: BatchCounters }
@@ -228,7 +232,7 @@ export const api = {
 
   listBatches: () => request<Batch[]>('/batches'),
   getBatch: (id: number) => request<BatchDetail>(`/batches/${id}`),
-  createBatch: (payload: { target_id: number; requested_count: number; operator?: string }) =>
+  createBatch: (payload: { target_id: number; requested_count?: number; operator?: string }) =>
     request<Batch>('/batches', { method: 'POST', body: JSON.stringify(payload) }),
   setBatchStatus: (id: number, status: BatchStatus) =>
     request<Batch>(`/batches/${id}/status`, {

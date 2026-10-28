@@ -3,6 +3,14 @@
 `observed` la so lan camera ket luan tung nhan. `confirmed` chi tinh nhung su
 kien da co cam bien duong roi xac nhan, dung quy tac cua nhanh AI: bo dem chi
 tang sau khi cam bien bao vien da roi dung o.
+
+Hai tong so **khac nhau** va khong duoc dung lan:
+
+* `confirmed_total` — moi vien da roi co xac nhan, ke ca vien loai da roi vao o
+  loai. Dung de doi chieu voi so vien thuc su da di qua may.
+* `accepted_total` — chi vien dat. Day moi la tien do so voi so vien can lay:
+  `decision_simulator` tra `accepted_count_increment = 0` cho vien loai, nen
+  vien loai roi vao o loai khong duoc tinh la da lay duoc mot vien.
 """
 from collections.abc import Iterable
 
@@ -26,6 +34,7 @@ def summarize(events: Iterable[PillEvent]) -> dict:
         'observed': observed,
         'confirmed': confirmed,
         'confirmed_total': sum(confirmed.values()),
+        'accepted_total': confirmed['ACCEPTED'],
     }
 
 

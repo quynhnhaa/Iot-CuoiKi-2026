@@ -1,4 +1,4 @@
-"""Me dem: mot loai vien chuan va so vien can lay."""
+"""Me dem: mot loai vien chuan, va tuy chon mot so vien can lay."""
 from datetime import datetime
 from enum import Enum
 
@@ -21,7 +21,8 @@ class Batch(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     target_id: Mapped[int] = mapped_column(ForeignKey('targets.id'))
-    requested_count: Mapped[int]
+    # None = dem mo: khong biet truoc so vien, dem den khi nguoi van hanh dung.
+    requested_count: Mapped[int | None] = mapped_column(default=None)
     status: Mapped[BatchStatus] = mapped_column(String(16), default=BatchStatus.PENDING)
     operator: Mapped[str | None] = mapped_column(String(128), default=None)
     note: Mapped[str | None] = mapped_column(Text, default=None)
