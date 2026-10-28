@@ -93,6 +93,63 @@ Mỗi mẻ có hai bộ số:
 
 API từ chối xác nhận rơi cho một sự kiện mà `release_allowed=false`, nên không thể cộng bộ đếm cho viên mà hệ thống chưa cho phép thả.
 
+Hệ quả cần nhớ khi hiển thị: `WRONG_DRUG`, `MULTIPLE_PILLS` và `EMPTY_FRAME` **luôn** có `release_allowed=false`, nên `confirmed` của ba nhãn này vĩnh viễn bằng 0 — không có gì để cảm biến xác nhận cả. Giao diện vì vậy hiện `observed` làm con số chính cho ba ô đó; hiện số 0 ở chỗ to nhất sẽ thành "mẻ này không có viên sai thuốc nào" trong khi camera vừa bắt được một viên. Chỉ `ACCEPTED` và `DEFECTIVE` mới có hai con số thật sự khác nhau.
+
+Trong `confirmed` lại có hai tổng, cũng không được lẫn:
+
+| Khoá | Nghĩa |
+| --- | --- |
+| `confirmed_total` | Mọi viên đã rơi có xác nhận, **kể cả viên loại đã rơi vào ô loại**. |
+| `accepted_total` | Chỉ viên đạt. Đây là con số chính của mẻ. |
+
+`decision_simulator` trả `accepted_count_increment = 0` cho viên sứt vỡ: nó vẫn rơi và cảm biến vẫn xác nhận, nhưng rơi vào ô loại nên không phải một viên đã lấy được. Con số "đã đếm được" trên web và widget tương ứng trên dashboard đều phải đọc `accepted_total`.
+
+## Năm trạng thái của một mẻ
+
+| Trạng thái | Nghĩa trong đời máy | Nhận sự kiện đếm? |
+| --- | --- | --- |
+| `pending` — Chờ chạy | Mẻ đã khai, chọn xong mẫu chuẩn, chưa bấm bắt đầu. Khay có thể chưa nạp. | Không |
+| `running` — Đang chạy | Máy đang soi và thả viên. | **Có** |
+| `paused` — Tạm dừng | Người vận hành dừng giữa chừng và định chạy tiếp. | Không |
+| `done` — Xong | Kết thúc bình thường. **Số đếm dùng được.** | Không, vĩnh viễn |
+| `aborted` — Đã huỷ | Kết thúc bất thường. **Số đếm bỏ đi.** | Không, vĩnh viễn |
+
+Chỉ `running` mới ghi được sự kiện; mọi trạng thái khác bị `pill_events.py` trả 409. Nên `paused` không phải nhãn trang trí — nó thật sự đóng cửa với thiết bị.
+
+Cặp quan trọng nhất là `done` với `aborted`. Cả hai đều là "mẻ đã kết thúc", nhưng chúng trả lời một câu khác hẳn: **số đếm này có tin được không**. Một mẻ huỷ vì nghi ống kính mờ thì mấy viên đã đếm là rác; một mẻ xong thì số đó là thật. Người đọc lại lịch sử sau vài tháng cần phân biệt đúng chỗ đó, nên hai nhãn này không gộp được.
+
+Đường đi hợp lệ nằm ở `ALLOWED_TRANSITIONS` trong [app/services/batch_state.py](backend/app/services/batch_state.py):
+
+```
+pending ─┬─> running <──> paused
+         │      │           │
+         │      └─────┬─────┘
+         │            v
+         └────────> done
+         └────────> aborted  (từ pending, running hoặc paused)
+```
+
+Hai điều bảng này cố ý bắt buộc:
+
+- **`paused` đi thẳng được sang `done`.** Tạm dừng chỉ có nghĩa là máy ngừng nhận viên, không phải là mẻ chưa được phép chốt. Người vận hành dừng lại xem khay, thấy đã đủ, thì phải kết thúc được ngay — bắt họ chạy tiếp rồi mới dừng được, hoặc huỷ cả mẻ để vứt số đã đếm, là hai lựa chọn đều sai.
+- **`done` và `aborted` là hai cửa cuối.** Mẻ đã chốt thì không mở lại, vì số đếm của nó có thể đã được ghi đi nơi khác.
+
+Nút bấm trên web và lệnh từ dashboard ThingsBoard đi qua đúng bảng này, không có đường tắt nào riêng cho dashboard.
+
+## Mẻ đếm mở: không khai báo trước số viên
+
+Mẻ không có số viên đích. Người vận hành chọn mẫu chuẩn, bấm bắt đầu, và mẻ đếm cho tới khi họ bấm kết thúc — không phải đoán trước sẽ đếm được bao nhiêu viên.
+
+`requested_count` vẫn còn trong API và có thể để trống (`null`); khi để trống, telemetry **không** gửi khoá đó, nên widget trên dashboard không vẽ một thanh tiến độ không có mẫu số. Trước đây trường này bắt buộc nhưng không chặn gì cả — chạm tới số đó mẻ vẫn nhận tiếp sự kiện — nên nó chỉ là một con số để nhìn, và giao diện đã bỏ hẳn.
+
+CSDL tạo trước thay đổi này cần chạy một lần:
+
+```bash
+cd web/backend && .venv/Scripts/python migrations/001_requested_count_optional.py
+```
+
+Script dựng lại bảng `batches` cho `requested_count` nhận `NULL`; `users`, `targets` và `pill_events` không bị đụng tới nên tài khoản và mã TOTP còn nguyên. Chạy lại nhiều lần không sao.
+
 ## Logic ba nhãn không được viết lại ở đây
 
 `ACCEPTED` / `DEFECTIVE` / `WRONG_DRUG` do [`model/src/common/decision_simulator.py`](../model/src/common/decision_simulator.py) quyết định. Backend nạp đúng file đó theo đường dẫn ([`app/services/decision.py`](backend/app/services/decision.py)) và chỉ gọi `decide`. Bản sao thứ hai của logic này sẽ lệch khỏi bản đã có kiểm thử, nên không có bản sao nào.
@@ -114,8 +171,8 @@ web/
 │   │   ├── config.py
 │   │   ├── db.py
 │   │   └── main.py
-│   ├── scripts/        create_admin.py
-│   ├── migrations/     để trống; thêm Alembic khi schema ổn định
+│   ├── scripts/        create_admin.py, seed_demo.py
+│   ├── migrations/     001_requested_count_optional.py; thêm Alembic khi schema ổn định
 │   └── tests/
 └── frontend/           Vite + React + TypeScript
     └── src/
@@ -170,6 +227,18 @@ Lần đăng nhập đầu của admin sẽ vào luồng ghi danh TOTP và trả
 
 Bảng được tạo lúc khởi động cho bản demo. Khi schema ổn định thì chuyển sang Alembic trong `migrations/`.
 
+### Dữ liệu mẫu để xem giao diện
+
+Giao diện khi chưa có mẻ nào chỉ là những ô trống. `seed_demo.py` nạp năm mẻ ở năm trạng thái khác nhau — đang chạy, xong, tạm dừng, đã huỷ, chờ chạy — để xem máy vận hành ra sao khi có dữ liệu:
+
+```bash
+cd web/backend && .venv/Scripts/python scripts/seed_demo.py --reset
+```
+
+Nhãn của từng viên **không bịa**: mọi quan sát đều chạy qua đúng `decision_simulator.decide()` của nhánh AI, nên nhãn và lý do hiện ra giống hệt lúc máy chạy thật. Chỉ tên mẫu chuẩn, tên người vận hành và mốc thời gian là dựng sẵn.
+
+`--reset` xoá mẻ, sự kiện và mẫu chuẩn đang có; tài khoản thì không đụng tới. Thêm `--with-demo-account` nếu cần một tài khoản vận hành để đăng nhập xem — mật khẩu sinh ngẫu nhiên và in ra một lần. **Đừng dùng cờ đó trên máy chạy thật**: đó là một tài khoản có quyền ghi kết quả đếm.
+
 ## Chạy frontend
 
 ```bash
@@ -192,7 +261,7 @@ Các kiểm thử bám vào những ràng buộc dễ bị phá khi sửa về s
 - **Xác thực** (`test_auth.py`): mật khẩu một mình không mở được gì, `mfa_token` không gọi được API nghiệp vụ, mã TOTP không phát lại được nhưng mã kế tiếp vẫn dùng được, mã dự phòng chỉ một lần, khoá tài khoản sau 5 lần sai, đổi mật khẩu thu hồi token cũ.
 - **Phân quyền** (`test_authorization.py`): mọi endpoint từ chối gọi vô danh, viewer không ghi được, operator không quản trị tài khoản, admin không ghi kết quả soi viên, tài khoản máy chỉ ghi được kết quả, key cũ hết hiệu lực sau khi phát key mới, admin không tự khoá mình ra ngoài.
 - **ThingsBoard** (`test_thingsboard.py`): tắt mặc định thì không gửi gì, telemetry tách tên `confirmed_*`/`observed_*`, ThingsBoard sập không làm hỏng mẻ đang chạy, thiếu bí mật thì kênh lệnh đóng chứ không mở, lệnh từ dashboard theo đúng bảng chuyển trạng thái của web.
-- **Luồng mẻ đếm** (`test_batch_flow.py`): danh tính chưa xác minh ra `WRONG_DRUG`, bộ đếm chỉ tăng sau xác nhận rơi, không xác nhận rơi khi chưa được phép thả, không ghi sự kiện khi mẻ không `running`, không nhảy trạng thái tuỳ ý.
+- **Luồng mẻ đếm** (`test_batch_flow.py`): danh tính chưa xác minh ra `WRONG_DRUG`, bộ đếm chỉ tăng sau xác nhận rơi, không xác nhận rơi khi chưa được phép thả, không ghi sự kiện khi mẻ không `running`, không nhảy trạng thái tuỳ ý, viên loại có rơi nhưng không tính vào tiến độ.
 
 ## API
 
@@ -233,5 +302,6 @@ Các kiểm thử bám vào những ràng buộc dễ bị phá khi sửa về s
 - **Chưa có nhật ký kiểm toán** (ai đăng nhập lúc nào, ai đổi gì) ngoài `last_login_at`.
 - **Tích hợp ThingsBoard chưa chạy thử với một ThingsBoard thật.** Kiểm thử dùng transport giả, nên hình dạng payload và luồng lệnh đã được khoá lại, nhưng việc dashboard hiển thị đúng thì phải dựng instance mới biết.
 - Telemetry đẩy theo từng sự kiện, chưa có hàng đợi hay gửi lại khi hỏng — mất mạng lúc nào thì dashboard thiếu nhịp đó cho tới sự kiện kế tiếp.
+- **Khung ảnh soi từng viên còn trống.** Cột "Ảnh" trên trang chi tiết mẻ đã có chỗ cho ảnh, và phân biệt viên mà thiết bị đã ghi `image_path` với viên chưa có gì — nhưng web chưa có đường nhận ảnh từ camera nên chưa tải được ảnh nào về.
 - Chưa nhận ảnh trực tiếp từ camera, chưa có Alembic.
 - Giao diện chưa có kiểm thử tự động; các màn hình được xem bằng tay ở cả chế độ sáng, tối và bề rộng điện thoại.
