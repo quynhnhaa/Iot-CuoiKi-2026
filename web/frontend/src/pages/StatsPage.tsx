@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 
 import { Icon } from '../components/Icon'
-import { Alert, Card, Field, PageHeader, ROUTE_LOOK, Tile } from '../components/ui'
+import { PillChart } from '../components/PillChart'
+import { Alert, Card, EmptyState, Field, PageHeader, ROUTE_LOOK, Tile } from '../components/ui'
 import { api, type Route, type StatsPeriod, type StatsResponse } from '../lib/api'
 
 const ROUTES: Route[] = ['ACCEPTED', 'DEFECTIVE', 'WRONG_DRUG', 'MULTIPLE_PILLS', 'EMPTY_FRAME']
@@ -135,6 +136,19 @@ export function StatsPage() {
               />
               <Tile label="Số mẻ" value={data.totals.batches} />
             </div>
+          </Card>
+
+          <Card
+            title="Số viên camera soi"
+            description="Trục tính theo số lần camera soi, không phải số cảm biến đã xác nhận: trộn hai cơ sở vào một cột sẽ đếm viên đang trên đường rơi thành viên loại."
+          >
+            {data.totals.observed_total === 0 ? (
+              <EmptyState icon="chart" title="Chưa có viên nào trong khoảng này">
+                Chọn khoảng khác, hoặc chạy một mẻ để có số liệu.
+              </EmptyState>
+            ) : (
+              <PillChart rows={data.rows} dimmed={loading} />
+            )}
           </Card>
 
           <section className="card">

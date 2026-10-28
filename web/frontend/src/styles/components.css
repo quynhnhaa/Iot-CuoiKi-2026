@@ -793,3 +793,177 @@ tfoot td {
   height: 13px;
   border-width: 1.5px;
 }
+
+/* Biểu đồ cột chồng trên trang Thống kê.
+   Màu chỉ nằm ở cột; chữ trục, chữ chú thích và số trong tooltip đều mặc token
+   mực. Một nhãn tô màu dữ liệu là nhãn khó đọc, và màu thì đã có ô vuông bên
+   cạnh gánh rồi. */
+.chart {
+  transition: opacity var(--transition);
+}
+
+.chart-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.legend-swatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.legend-swatch.good,
+.legend-key.good {
+  background: var(--good);
+}
+
+.legend-swatch.rest,
+.legend-key.rest {
+  background: var(--neutral);
+}
+
+/* Nhiều kỳ thì cuộn ngang, giống bảng ngay bên dưới — không ép 30 cột vào một
+   màn hình điện thoại rồi để chúng mảnh như sợi chỉ. */
+.chart-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0 calc(-1 * var(--space-5));
+  padding: 0 var(--space-5);
+}
+
+/* Hop chu thich treo o day chu khong o trong `.chart-scroll`: `overflow-x:
+   auto` keo theo `overflow-y: auto`, nen dat ben trong thi day hop bi cat. */
+.chart-frame {
+  position: relative;
+}
+
+.chart svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Lưới và trục lùi hẳn về sau: nét liền một bậc so với nền, không nét đứt —
+   nét đứt đọc ra thành "ngưỡng" hoặc "dự báo" trong khi nó chỉ là lưới. */
+.grid,
+.axis-rule {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.axis-rule {
+  stroke: var(--border-strong);
+}
+
+.axis {
+  fill: var(--ink-muted);
+  font-size: var(--text-xs);
+}
+
+.bar {
+  transition: opacity var(--transition);
+}
+
+.bar.good {
+  fill: var(--good);
+}
+
+.bar.rest {
+  fill: var(--neutral);
+}
+
+.bar.faded {
+  opacity: 0.45;
+}
+
+.chart-hit {
+  cursor: default;
+  outline: none;
+}
+
+.chart-hit:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.chart-tip {
+  position: absolute;
+  /* Khop voi MARGIN.top trong PillChart.tsx: khong dat `top` thi hop roi
+     xuong vi tri tinh cua no, tuc la nam han duoi bieu do. */
+  top: 14px;
+  transform: translateX(-50%);
+  width: 208px;
+  padding: var(--space-3);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-lg);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.chart-tip-title {
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+  margin-bottom: var(--space-1);
+}
+
+/* Số đứng trước, tên đứng sau: người đọc đã biết mình trỏ vào đâu, cái họ cần
+   là con số. */
+.chart-tip-lead {
+  font-size: var(--text-base);
+  color: var(--ink-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.chart-tip-lead strong {
+  font-size: var(--text-lg);
+  color: var(--ink);
+  margin-right: var(--space-1);
+}
+
+.chart-tip ul {
+  list-style: none;
+  display: grid;
+  gap: var(--space-1);
+}
+
+.chart-tip li {
+  display: grid;
+  grid-template-columns: 11px 2.5em 1fr;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--ink-secondary);
+}
+
+.chart-tip li strong {
+  color: var(--ink);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.legend-key {
+  width: 11px;
+  height: 3px;
+  border-radius: var(--radius-pill);
+}
+
+.chart-tip-foot {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--hairline);
+  font-size: var(--text-xs);
+  color: var(--ink-muted);
+}
