@@ -323,6 +323,6 @@ thiếu dấu còn hơn bịa ra một câu sai nghĩa.
 - **Chưa có nhật ký kiểm toán** (ai đăng nhập lúc nào, ai đổi gì) ngoài `last_login_at`.
 - **Tích hợp ThingsBoard chưa chạy thử với một ThingsBoard thật.** Kiểm thử dùng transport giả, nên hình dạng payload và luồng lệnh đã được khoá lại, nhưng việc dashboard hiển thị đúng thì phải dựng instance mới biết.
 - Telemetry đẩy theo từng sự kiện, chưa có hàng đợi hay gửi lại khi hỏng — mất mạng lúc nào thì dashboard thiếu nhịp đó cho tới sự kiện kế tiếp.
-- **Khung ảnh soi từng viên còn trống.** Cột "Ảnh" trên trang chi tiết mẻ đã có chỗ cho ảnh, và phân biệt viên mà thiết bị đã ghi `image_path` với viên chưa có gì — nhưng web chưa có đường nhận ảnh từ camera nên chưa tải được ảnh nào về.
+- **Giao diện không hiện ảnh soi từng viên.** Thiết bị vẫn ghi `image_path` và backend vẫn lưu, nhưng web chưa có đường nhận ảnh từ camera nên trang chi tiết mẻ không có cột ảnh. Khi nào có endpoint nhận ảnh thì dựng lại cột đó.
 - Chưa nhận ảnh trực tiếp từ camera, chưa có Alembic.
 - Giao diện chưa có kiểm thử tự động; các màn hình được xem bằng tay ở cả chế độ sáng, tối và bề rộng điện thoại.

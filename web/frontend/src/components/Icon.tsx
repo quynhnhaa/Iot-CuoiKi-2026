@@ -18,7 +18,6 @@ export type IconName =
   | 'pill'
   | 'key'
   | 'shield'
-  | 'camera'
   | 'copy'
   | 'chevron'
   | 'inbox'
@@ -105,12 +104,6 @@ const PATHS: Record<IconName, JSX.Element> = {
     </>
   ),
   chevron: <path d="M6 9l6 6 6-6" />,
-  camera: (
-    <>
-      <path d="M3 8.5A1.5 1.5 0 0 1 4.5 7h2.2l1.2-2h8.2l1.2 2h2.2A1.5 1.5 0 0 1 21 8.5v9A1.5 1.5 0 0 1 19.5 19h-15A1.5 1.5 0 0 1 3 17.5z" />
-      <circle cx="12" cy="13" r="3.2" />
-    </>
-  ),
   inbox: (
     <>
       <path d="M3 13l2.6-7.2A2 2 0 0 1 7.5 4.5h9a2 2 0 0 1 1.9 1.3L21 13v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />

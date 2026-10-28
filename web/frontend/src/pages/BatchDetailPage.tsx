@@ -211,10 +211,6 @@ export function BatchDetailPage() {
             <p className="hint">{events.length} lần soi</p>
           </div>
         </div>
-        <p className="hint">
-          Ô ảnh là khung chỗ cho ảnh camera soi từng viên. Thiết bị gửi được đường dẫn ảnh
-          (`image_path`), nhưng web chưa nhận ảnh trực tiếp từ camera nên khung còn trống.
-        </p>
         {events.length === 0 ? (
           <EmptyState icon="pill" title="Chưa có viên nào được ghi nhận">
             Thiết bị sẽ đẩy kết quả soi từng viên vào đây khi mẻ đang chạy.
@@ -226,7 +222,6 @@ export function BatchDetailPage() {
                 <tr>
                   <th className="num">#</th>
                   <th>Lúc</th>
-                  <th>Ảnh</th>
                   <th>Kết quả</th>
                   <th>Lý do</th>
                   <th>Cảm biến rơi</th>
@@ -238,9 +233,6 @@ export function BatchDetailPage() {
                     <td className="num">{event.sequence}</td>
                     <td className="hint">
                       {new Date(event.created_at).toLocaleTimeString('vi-VN')}
-                    </td>
-                    <td>
-                      <PillThumb path={event.image_path} />
                     </td>
                     <td>
                       <RouteBadge route={event.route} />
@@ -278,20 +270,3 @@ export function BatchDetailPage() {
   )
 }
 
-
-/**
- * Khung ảnh của một viên. Chưa có đường nhận ảnh từ camera nên khung luôn
- * trống — để đó cho thấy chỗ của ảnh, và để không ai tưởng là đã có ảnh mà
- * giao diện quên hiện.
- */
-function PillThumb({ path }: { path: string | null }) {
-  return (
-    <span
-      className={path ? 'thumb has-path' : 'thumb'}
-      title={path ? `Thiết bị ghi đường dẫn: ${path}` : 'Chưa nhận ảnh từ camera'}
-      aria-label={path ? 'Có đường dẫn ảnh, chưa tải được ảnh' : 'Chưa có ảnh'}
-    >
-      <Icon name="camera" size={18} />
-    </span>
-  )
-}

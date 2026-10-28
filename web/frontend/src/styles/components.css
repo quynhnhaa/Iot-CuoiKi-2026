@@ -732,23 +732,3 @@ pre {
   margin-right: var(--space-2);
 }
 
-/* Khung cho anh soi tung vien. Chua nhan duoc anh nen khung con trong.
-   Vien dut = chua co gi; vien lien = thiet bi da ghi duong dan anh, chi la
-   web chua tai duoc anh ve. Hai trang thai khac nhau that nen phai nhin ra. */
-.thumb {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 44px;
-  border: 1px dashed var(--hairline);
-  border-radius: var(--radius-sm);
-  color: var(--ink-muted);
-  background: var(--surface-sunken);
-}
-
-.thumb.has-path {
-  border-style: solid;
-  border-color: var(--accent);
-  color: var(--accent);
-}
