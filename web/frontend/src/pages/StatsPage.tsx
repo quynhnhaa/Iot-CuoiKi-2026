@@ -158,11 +158,6 @@ export function StatsPage() {
                 <p className="hint">{data.rows.length} kỳ</p>
               </div>
             </div>
-            <p className="hint">
-              Ba cột <strong>Sai thuốc</strong>, <strong>Nhiều viên</strong> và{' '}
-              <strong>Khung trống</strong> là số camera thấy. Máy không bao giờ thả những viên này
-              xuống ô nào, nên chúng không có số “đã xác nhận”.
-            </p>
             <div className="table-wrap">
               <table>
                 <thead>
