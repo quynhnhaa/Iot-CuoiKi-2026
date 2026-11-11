@@ -196,12 +196,6 @@ export function BatchDetailPage() {
           Hai ô đầu đếm số viên <strong>cảm biến đường rơi đã xác nhận</strong>; dòng dưới là số
           camera thấy, và hai số lệch nhau nghĩa là có viên đang trên đường rơi — hoặc đang kẹt.
         </p>
-
-        <p className="hint">
-          Ba ô sau đếm <strong>số camera thấy</strong>. Máy không bao giờ thả những viên này xuống
-          ô nào, nên cảm biến không có gì để xác nhận và một bộ đếm “đã xác nhận” cho chúng sẽ mãi
-          bằng 0.
-        </p>
       </Card>
 
       <section className="card">
