@@ -1,0 +1,65 @@
+# Cong gac cho thu muc `web/`: chay dung hai lenh ma nguoi lam phai chay truoc
+# khi commit — pytest cho backend, tsc cho frontend.
+#
+# Hai job tach roi de khi do mot cai, biet ngay la backend hay frontend, khong
+# phai mo log ra doc.
+#
+# Khong loc theo `paths`: backend nap `model/src/common/decision_simulator.py`
+# theo duong dan, nen mot thay doi trong `model/` co the lam vo test cua `web/`
+# ma `web/` khong doi mot dong nao.
+name: web
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  backend:
+    name: pytest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: web/backend/requirements.txt
+
+      - name: Install dependencies
+        working-directory: web/backend
+        run: pip install -r requirements.txt
+
+      # `tests/conftest.py` tu dat WEB_SECRET_KEY, WEB_DATABASE_URL va so vong
+      # bcrypt, nen job nay khong can secret nao.
+      - name: Run tests
+        working-directory: web/backend
+        run: pytest -q
+
+  frontend:
+    name: tsc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: web/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: web/frontend
+        run: npm ci
+
+      - name: Type-check
+        working-directory: web/frontend
+        run: npx tsc --noEmit
+
+      # Build that su: tsc khong bat loi cua Vite (import thieu, asset sai
+      # duong dan), ma hong build thi khong trien khai duoc.
+      - name: Build
+        working-directory: web/frontend
+        run: npm run build

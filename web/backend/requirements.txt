@@ -1,0 +1,16 @@
+fastapi>=0.115,<0.120
+uvicorn[standard]>=0.32,<0.40
+sqlalchemy>=2.0,<2.1
+pydantic>=2.9,<3
+pydantic-settings>=2.6,<3
+python-multipart>=0.0.12,<0.1
+# Goi ThingsBoard; cung duoc TestClient dung lai.
+httpx>=0.27,<0.29
+
+# Xac thuc hai lop
+pyjwt>=2.9,<3
+pyotp>=2.9,<3
+bcrypt>=4.2,<5
+
+# Kiem thu
+pytest>=8,<10
