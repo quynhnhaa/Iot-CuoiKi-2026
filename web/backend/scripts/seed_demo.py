@@ -67,8 +67,6 @@ GOOD = {
 }
 CHIPPED = {**GOOD, 'defect_status': 'defective'}
 WRONG_PILL = {**GOOD, 'target_matches': False}
-TWO_PILLS = {**GOOD, 'pill_count': 2}
-EMPTY = {**GOOD, 'pill_count': 0}
 BLURRY = {**GOOD, 'image_usable': False}
 UNSURE = {**GOOD, 'defect_status': 'uncertain'}
 
@@ -88,7 +86,7 @@ SCENARIOS = [
         'note': 'Mẻ đang chạy — viên vừa soi chưa có tín hiệu cảm biến rơi.',
         'started_minutes_ago': 12,
         'observations': pattern(
-            19, {4: CHIPPED, 9: TWO_PILLS, 13: EMPTY, 16: CHIPPED}
+            19, {4: CHIPPED, 16: CHIPPED}
         ),
         # Vien cuoi da duoc phep tha nhung cam bien chua bao: day la luc hai bo
         # dem lech nhau 1, va do la binh thuong.
@@ -103,7 +101,7 @@ SCENARIOS = [
         'finished_minutes_ago': 148,
         # 25 lan soi, 5 lan khong ra vien dat => 20 vien dat.
         'observations': pattern(
-            25, {3: CHIPPED, 7: BLURRY, 11: CHIPPED, 15: UNSURE, 20: EMPTY}
+            25, {3: CHIPPED, 7: BLURRY, 11: CHIPPED, 15: UNSURE}
         ),
     },
     {
@@ -179,7 +177,7 @@ def history_scenarios(rng: random.Random) -> list[dict]:
         total = rng.randint(14, 38)
         specials: dict[int, dict] = {}
         for _ in range(rng.randint(1, 5)):
-            specials[rng.randrange(total)] = rng.choice([CHIPPED, WRONG_PILL, TWO_PILLS, EMPTY, BLURRY])
+            specials[rng.randrange(total)] = rng.choice([CHIPPED, WRONG_PILL, BLURRY])
         out.append(
             {
                 'target': rng.choice(['MC-064', 'MC-091', 'MC-107']),
@@ -236,22 +234,27 @@ def seed(session, rng: random.Random) -> None:
         session.add(batch)
         session.flush()
 
+        # Moi me co ba lan chup, mot lan cho tung khay. Mot anh co the cho ra
+        # nhieu ket qua vien, nen giu lai toan bo quan sat va nhom chung theo khay.
         observations = scenario['observations']
         leave_last = scenario.get('leave_last_unconfirmed', False)
         at = started or anchor
+        per_tray = (len(observations) + 2) // 3
+        captured_at: dict[int, datetime] = {}
         for index, observation in enumerate(observations, start=1):
             decision = decide(**observation)
-            # May soi moi vien cach nhau vai giay; con so chi de truc thoi gian
-            # tren giao dien doc duoc.
-            at = at + timedelta(seconds=rng.randint(6, 20))
+            tray_number = min((index - 1) // per_tray + 1, 3)
+            if tray_number not in captured_at:
+                at = at + timedelta(seconds=rng.randint(6, 20))
+                captured_at[tray_number] = at
             is_last = index == len(observations)
-            # Thiet bi se ghi duong dan anh soi; web chua nhan anh nen day chi
-            # la mot duong dan tuong trung tren vai vien dau.
-            image_path = f'runs/pipeline/me-{batch.id}/vien-{index:03d}.jpg' if index <= 3 else None
+            first_pill_in_tray = (index - 1) % per_tray == 0
+            image_path = f'runs/pipeline/me-{batch.id}/khay-{tray_number}.jpg' if first_pill_in_tray else None
             session.add(
                 PillEvent(
                     batch_id=batch.id,
                     sequence=index,
+                    tray_number=tray_number,
                     route=decision['route'],
                     release_allowed=decision['release_allowed'],
                     requires_drop_confirmation=decision['requires_drop_confirmation'],
@@ -260,7 +263,7 @@ def seed(session, rng: random.Random) -> None:
                     drop_confirmed=(
                         decision['release_allowed'] and not (leave_last and is_last)
                     ),
-                    created_at=at,
+                    created_at=captured_at[tray_number],
                     image_path=image_path,
                     **observation,
                 )

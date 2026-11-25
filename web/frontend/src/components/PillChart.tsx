@@ -35,7 +35,7 @@ const GAP = 2
 // Nửa bề rộng hộp chú thích; xem `.chart-tip` trong components.css.
 const TIP_HALF = 104
 
-const REJECT_ROUTES: Route[] = ['DEFECTIVE', 'WRONG_DRUG', 'MULTIPLE_PILLS', 'EMPTY_FRAME']
+const REJECT_ROUTES: Route[] = ['DEFECTIVE', 'WRONG_DRUG']
 
 export function PillChart({ rows, dimmed }: { rows: StatsRow[]; dimmed?: boolean }) {
   const titleId = useId()
@@ -111,7 +111,7 @@ export function PillChart({ rows, dimmed }: { rows: StatsRow[]; dimmed?: boolean
             onPointerLeave={() => setHovered(null)}
           >
             <title id={titleId}>
-              {`Số viên camera soi theo từng kỳ, chia thành viên đúng nguyên và viên bị loại.`}
+              {`Số viên đã phân tích theo từng kỳ, chia thành viên đúng nguyên và viên bị loại.`}
               {` Cao nhất ${peak} viên. Số liệu đầy đủ nằm ở bảng bên dưới.`}
             </title>
 
@@ -188,7 +188,7 @@ export function PillChart({ rows, dimmed }: { rows: StatsRow[]; dimmed?: boolean
           <div className="chart-tip" style={{ left: tipLeft }} role="presentation">
             <p className="chart-tip-title">{active.label}</p>
             <p className="chart-tip-lead">
-              <strong className="nums">{active.observed_total}</strong> viên camera soi
+              <strong className="nums">{active.observed_total}</strong> viên đã phân tích
             </p>
             <ul>
               <li>
@@ -205,7 +205,7 @@ export function PillChart({ rows, dimmed }: { rows: StatsRow[]; dimmed?: boolean
               ))}
             </ul>
             <p className="chart-tip-foot">
-              {active.batches} mẻ · {active.accepted_total} viên đạt đã xác nhận
+              {active.batches} mẻ · {active.observed.ACCEPTED ?? 0} viên đúng, nguyên
             </p>
           </div>
         )}
@@ -298,7 +298,7 @@ function shortLabel(row: StatsRow): string {
 
 function describe(row: StatsRow): string {
   const accepted = row.observed.ACCEPTED ?? 0
-  return `${row.label}: ${row.observed_total} viên camera soi, ${accepted} đúng nguyên, ${
+  return `${row.label}: ${row.observed_total} viên đã phân tích, ${accepted} đúng nguyên, ${
     row.observed_total - accepted
   } bị loại.`
 }

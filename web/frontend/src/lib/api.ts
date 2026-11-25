@@ -164,6 +164,7 @@ export type PillEvent = {
   id: number
   batch_id: number
   sequence: number
+  tray_number: number | null
   pill_count: number
   image_usable: boolean
   identity_verified: boolean
@@ -178,6 +179,17 @@ export type PillEvent = {
   drop_confirmed: boolean
   image_path: string | null
   created_at: string
+}
+
+/** Snapshot AI: so vien cua tung nhan trong mot khay. */
+export type TrayCount = { label: string; count: number }
+
+export type TrayResult = {
+  tray_number: number
+  counts: TrayCount[]
+  image_path: string | null
+  created_at: string
+  updated_at: string
 }
 
 export type User = {
@@ -307,6 +319,11 @@ export const api = {
     }),
 
   listEvents: (batchId: number) => request<PillEvent[]>(`/batches/${batchId}/events`),
+  listTrayResults: (batchId: number) => request<TrayResult[]>(`/batches/${batchId}/tray-results`),
+  replaceTrayResult: (batchId: number, trayNumber: number, payload: { counts: TrayCount[]; image_path?: string | null }) =>
+    request<TrayResult>(`/batches/${batchId}/tray-results/${trayNumber}`, {
+      method: 'PUT', body: JSON.stringify(payload),
+    }),
   confirmDrop: (batchId: number, eventId: number, dropConfirmed: boolean) =>
     request<PillEvent>(`/batches/${batchId}/events/${eventId}/drop`, {
       method: 'PATCH',

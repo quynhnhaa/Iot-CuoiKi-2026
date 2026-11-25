@@ -56,6 +56,7 @@ FIELD_LABELS: dict[str, str] = {
     'defect_status': 'Tình trạng hư hỏng',
     'identity_gate_validated': 'Cổng danh tính đã kiểm',
     'hardware_ready': 'Phần cứng sẵn sàng',
+    'tray_number': 'Số khay',
     'image_path': 'Đường dẫn ảnh',
     'drop_confirmed': 'Cảm biến rơi',
 }

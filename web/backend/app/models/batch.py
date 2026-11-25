@@ -34,3 +34,6 @@ class Batch(Base):
     events: Mapped[list['PillEvent']] = relationship(  # noqa: F821
         back_populates='batch', cascade='all, delete-orphan', order_by='PillEvent.sequence'
     )
+    tray_results: Mapped[list['TrayResult']] = relationship(  # noqa: F821
+        back_populates='batch', cascade='all, delete-orphan', order_by='TrayResult.tray_number'
+    )
