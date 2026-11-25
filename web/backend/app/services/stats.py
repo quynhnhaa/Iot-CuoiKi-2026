@@ -150,6 +150,8 @@ def summarize_periods(session: Session, period: str, first: date, last: date) ->
             select(PillEvent)
             .where(PillEvent.created_at >= naive_start)
             .where(PillEvent.created_at < naive_end)
+            .where(PillEvent.route != 'EMPTY_FRAME')
+            .where(PillEvent.route != 'MULTIPLE_PILLS')
         )
     )
     batches = list(

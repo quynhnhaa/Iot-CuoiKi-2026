@@ -54,6 +54,25 @@ def test_uncertain_identity_routes_to_wrong_drug(client, roles):
     assert event['release_allowed'] is False
 
 
+def test_multiple_pills_can_belong_to_one_tray(client, roles):
+    batch = create_batch(client, roles)
+    first = client.post(
+        f'/api/batches/{batch["id"]}/events',
+        json={**NORMAL_PILL, 'tray_number': 2},
+        headers=roles['operator'],
+    )
+    assert first.status_code == 201
+    assert first.json()['tray_number'] == 2
+
+    second = client.post(
+        f'/api/batches/{batch["id"]}/events',
+        json={**NORMAL_PILL, 'tray_number': 2},
+        headers=roles['operator'],
+    )
+    assert second.status_code == 201
+    assert second.json()['tray_number'] == 2
+
+
 def test_counter_only_moves_after_drop_confirmation(client, roles):
     batch = create_batch(client, roles)
     event = client.post(

@@ -1,266 +1,153 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { Alert, Badge, BatchStatusBadge, Card, EmptyState, PageHeader, RouteBadge, Tile } from '../components/ui'
+import { api, type BatchDetail, type BatchStatus, type PillEvent, type Target, type TrayCount, type TrayResult } from '../lib/api'
+import { RoleGate } from '../lib/auth'
 
-import { Icon } from '../components/Icon'
-import {
-  Alert,
-  BatchStatusBadge,
-  Card,
-  EmptyState,
-  PageHeader,
-  ROUTE_LOOK,
-  RouteBadge,
-  Tile,
-} from '../components/ui'
-import {
-  api,
-  type BatchDetail,
-  type BatchStatus,
-  type PillEvent,
-  type Route,
-  type Target,
-} from '../lib/api'
-import { RoleGate, useAuth } from '../lib/auth'
-
-const ROUTES: Route[] = ['ACCEPTED', 'DEFECTIVE', 'WRONG_DRUG', 'MULTIPLE_PILLS', 'EMPTY_FRAME']
-
+const TRAYS = [1, 2, 3] as const
 const STATUS_ACTIONS: { status: BatchStatus; label: string; variant?: string }[] = [
   { status: 'running', label: 'Bắt đầu' },
   { status: 'paused', label: 'Tạm dừng', variant: 'secondary' },
   { status: 'done', label: 'Kết thúc', variant: 'secondary' },
   { status: 'aborted', label: 'Huỷ mẻ', variant: 'danger' },
 ]
-
-/**
- * Bản sao của bảng chuyển trạng thái trong `app/services/batch_state.py`.
- * Backend vẫn là nơi quyết định — nó trả 409 cho bước không hợp lệ. Bảng ở
- * đây chỉ để không mời người dùng bấm một nút chắc chắn hỏng; mẻ đã xong hoặc
- * đã huỷ thì không đi đâu được nữa.
- */
 const ALLOWED_TRANSITIONS: Record<BatchStatus, BatchStatus[]> = {
-  pending: ['running', 'aborted'],
-  running: ['paused', 'done', 'aborted'],
-  paused: ['running', 'done', 'aborted'],
-  done: [],
-  aborted: [],
+  pending: ['running', 'aborted'], running: ['paused', 'done', 'aborted'], paused: ['running', 'done', 'aborted'], done: [], aborted: [],
+}
+
+type TraySummary = { correct: number; wrong: number; broken: number; total: number }
+
+function normalized(value: string) {
+  return value.trim().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('vi-VN')
+}
+
+function isBroken(label: string) {
+  return ['broken', 'defective', 'cracked', 'vien be', 'sut vo', 'be vo'].includes(normalized(label))
+}
+
+function summarizeTray(counts: TrayCount[], target: Target | null): TraySummary {
+  const acceptedLabels = target
+    ? [target.recognition_label, target.code, target.name].filter((label): label is string => Boolean(label)).map(normalized)
+    : []
+  return counts.reduce<TraySummary>((summary, item) => {
+    summary.total += item.count
+    if (isBroken(item.label)) summary.broken += item.count
+    else if (acceptedLabels.includes(normalized(item.label))) summary.correct += item.count
+    else summary.wrong += item.count
+    return summary
+  }, { correct: 0, wrong: 0, broken: 0, total: 0 })
+}
+
+function countLabel(counts: TrayCount[]) {
+  return counts.map((item) => `${item.label}: ${item.count}`).join(' · ')
 }
 
 export function BatchDetailPage() {
-  const { can } = useAuth()
   const { batchId } = useParams()
   const id = Number(batchId)
   const [batch, setBatch] = useState<BatchDetail | null>(null)
   const [events, setEvents] = useState<PillEvent[]>([])
+  const [trayResults, setTrayResults] = useState<TrayResult[]>([])
   const [target, setTarget] = useState<Target | null>(null)
   const [error, setError] = useState<string | null>(null)
-
+  const [selectedTray, setSelectedTray] = useState<'all' | number>('all')
   const reload = useCallback(async () => {
-    const [nextBatch, nextEvents, targets] = await Promise.all([
-      api.getBatch(id),
-      api.listEvents(id),
-      api.listTargets(),
+    const [nextBatch, nextEvents, nextTrayResults, targets] = await Promise.all([
+      api.getBatch(id), api.listEvents(id), api.listTrayResults(id), api.listTargets(),
     ])
     setBatch(nextBatch)
     setEvents(nextEvents)
+    setTrayResults(nextTrayResults)
     setTarget(targets.find((item) => item.id === nextBatch.target_id) ?? null)
   }, [id])
 
-  useEffect(() => {
-    reload().catch((err: Error) => setError(err.message))
-  }, [reload])
-
+  useEffect(() => { reload().catch((err: Error) => setError(err.message)) }, [reload])
   async function run(action: () => Promise<unknown>) {
-    try {
-      await action()
-      setError(null)
-      await reload()
-    } catch (err) {
-      setError((err as Error).message)
-    }
+    try { await action(); setError(null); await reload() } catch (err) { setError((err as Error).message) }
   }
+  if (!batch) return error ? <Alert variant="critical"><p>{error}</p></Alert> : <div className="empty"><span className="spinner" /></div>
 
-  if (!batch) {
-    return error ? (
-      <Alert variant="critical">
-        <p>{error}</p>
-      </Alert>
-    ) : (
-      <div className="empty">
-        <span className="spinner" />
-      </div>
-    )
-  }
-
-  const canOperate = can('admin', 'operator')
-
+  const visibleEvents = events.filter(
+    (event) => event.route !== 'EMPTY_FRAME' && event.route !== 'MULTIPLE_PILLS',
+  )
+  const filteredEvents = selectedTray === 'all'
+    ? visibleEvents
+    : visibleEvents.filter((event) => event.tray_number === selectedTray)
+  const summaries = TRAYS.map((tray) => summarizeTray(
+    trayResults.find((result) => result.tray_number === tray)?.counts ?? [], target,
+  ))
+  const overall = summaries.reduce<TraySummary>((total, summary) => ({
+    correct: total.correct + summary.correct,
+    wrong: total.wrong + summary.wrong,
+    broken: total.broken + summary.broken,
+    total: total.total + summary.total,
+  }), { correct: 0, wrong: 0, broken: 0, total: 0 })
   return (
     <div className="stack">
-      <PageHeader
-        title={`Mẻ #${batch.id}`}
-        description={`Tạo ${new Date(batch.created_at).toLocaleString('vi-VN')}`}
-        actions={<BatchStatusBadge status={batch.status} />}
-      />
+      <PageHeader title={`Mẻ #${batch.id}`} description={`Tạo ${new Date(batch.created_at).toLocaleString('vi-VN')}`} actions={<BatchStatusBadge status={batch.status} />} />
+      <p><Link to="/batches" className="hint">← Về danh sách mẻ</Link></p>
+      {error && <Alert variant="critical"><p>{error}</p></Alert>}
+      <RoleGate roles={['admin', 'operator']}><div className="actions">{STATUS_ACTIONS.map((action) => (
+        <button key={action.status} className={`btn ${action.variant ?? ''}`} disabled={!ALLOWED_TRANSITIONS[batch.status].includes(action.status)} onClick={() => void run(() => api.setBatchStatus(id, action.status))}>{action.label}</button>
+      ))}</div></RoleGate>
 
-      <p>
-        <Link to="/batches" className="hint">
-          ← Về danh sách mẻ
-        </Link>
-      </p>
+      <Card title="Thông tin mẻ"><dl className="meta-grid">
+        <div><dt>Mẫu chuẩn</dt><dd>{target ? `${target.code} — ${target.name}` : `#${batch.target_id}`}</dd></div>
+        <div><dt>Người vận hành</dt><dd>{batch.operator ?? '—'}</dd></div>
+        <div><dt>Bắt đầu</dt><dd>{batch.started_at ? new Date(batch.started_at).toLocaleString('vi-VN') : 'chưa chạy'}</dd></div>
+        <div><dt>Kết thúc</dt><dd>{batch.finished_at ? new Date(batch.finished_at).toLocaleString('vi-VN') : '—'}</dd></div>
+      </dl>{batch.note && <p className="hint">{batch.note}</p>}</Card>
 
-      {error && (
-        <Alert variant="critical">
-          <p>{error}</p>
-        </Alert>
-      )}
-
-      <RoleGate roles={['admin', 'operator']}>
-        <div className="actions">
-          {STATUS_ACTIONS.map((action) => (
-            <button
-              key={action.status}
-              className={`btn ${action.variant ?? ''}`}
-              disabled={!ALLOWED_TRANSITIONS[batch.status].includes(action.status)}
-              onClick={() => void run(() => api.setBatchStatus(id, action.status))}
-            >
-              {action.label}
-            </button>
-          ))}
-        </div>
-      </RoleGate>
-
-      <Card title="Thông tin mẻ">
-        <dl className="meta-grid">
-          <div>
-            <dt>Mẫu chuẩn</dt>
-            <dd>{target ? `${target.code} — ${target.name}` : `#${batch.target_id}`}</dd>
-          </div>
-          <div>
-            <dt>Người vận hành</dt>
-            <dd>{batch.operator ?? '—'}</dd>
-          </div>
-          <div>
-            <dt>Bắt đầu</dt>
-            <dd>
-              {batch.started_at ? new Date(batch.started_at).toLocaleString('vi-VN') : 'chưa chạy'}
-            </dd>
-          </div>
-          <div>
-            <dt>Kết thúc</dt>
-            <dd>
-              {batch.finished_at ? new Date(batch.finished_at).toLocaleString('vi-VN') : '—'}
-            </dd>
-          </div>
-        </dl>
-        {batch.note && <p className="hint">{batch.note}</p>}
-      </Card>
-
-      <Card
-        title="Bộ đếm của mẻ"
-        description="Viên được phép thả thì đếm theo cảm biến; viên bị loại ngay từ ảnh thì đếm theo camera."
-      >
-        <p className="headline-count">
-          <strong>{batch.counters.accepted_total}</strong> viên đạt đã đếm được
-          <span className="hint"> · {batch.counters.confirmed_total} viên đã rơi có xác nhận</span>
-        </p>
-
+      <Card title="Tổng hợp kết quả AI" description="Web đối chiếu nhãn AI với mẫu thuốc đã chọn của mẻ; không dùng kết luận đúng/sai từ AI.">
+        <p className="headline-count"><strong>{overall.total}</strong> viên đã nhận diện <span className="hint">· 3 khay</span></p>
         <div className="tiles">
-          {ROUTES.map((route) => {
-            const look = ROUTE_LOOK[route]
-            const confirmed = batch.counters.confirmed[route]
-            const observed = batch.counters.observed[route]
-            // Ba nhãn không bao giờ được phép thả thì không có gì để cảm biến
-            // xác nhận, nên số "đã xác nhận" của chúng vĩnh viễn bằng 0. Đưa
-            // số 0 đó lên chỗ to nhất là nói sai: ô "Sai thuốc" sẽ báo 0 trong
-            // khi camera vừa bắt được một viên sai. Với ba nhãn đó, số camera
-            // thấy mới là con số có nghĩa.
-            const value = look.droppable ? confirmed : observed
-            return (
-              <Tile
-                key={route}
-                label={look.label}
-                value={value}
-                status={look.status}
-                sub={look.droppable ? `camera thấy ${observed}` : 'camera thấy · không thả'}
-                dim={value === 0}
-              />
-            )
-          })}
+          <Tile label="Đúng thuốc" value={overall.correct} status="good" sub="viên" dim={overall.correct === 0} />
+          <Tile label="Sai thuốc" value={overall.wrong} status="critical" sub="viên" dim={overall.wrong === 0} />
+          <Tile label="Viên bể" value={overall.broken} status="warning" sub="viên" dim={overall.broken === 0} />
         </div>
-
-        <p className="hint">
-          Mẻ đếm đến khi người vận hành bấm kết thúc. Viên sứt vỡ cũng rơi và cũng được cảm biến
-          xác nhận, nhưng rơi vào ô loại nên không tính là một viên đã lấy được.
-        </p>
-
-        <p className="hint">
-          Hai ô đầu đếm số viên <strong>cảm biến đường rơi đã xác nhận</strong>; dòng dưới là số
-          camera thấy, và hai số lệch nhau nghĩa là có viên đang trên đường rơi — hoặc đang kẹt.
-        </p>
       </Card>
 
-      <section className="card">
-        <div className="card-header">
-          <div>
-            <h2>Từng viên</h2>
-            <p className="hint">{events.length} lần soi</p>
-          </div>
-        </div>
-        {events.length === 0 ? (
-          <EmptyState icon="pill" title="Chưa có viên nào được ghi nhận">
-            Thiết bị sẽ đẩy kết quả soi từng viên vào đây khi mẻ đang chạy.
-          </EmptyState>
-        ) : (
-          <div className="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th className="num">#</th>
-                  <th>Lúc</th>
-                  <th>Kết quả</th>
-                  <th>Lý do</th>
-                  <th>Cảm biến rơi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {events.map((event) => (
-                  <tr key={event.id}>
-                    <td className="num">{event.sequence}</td>
-                    <td className="hint">
-                      {new Date(event.created_at).toLocaleTimeString('vi-VN')}
-                    </td>
-                    <td>
-                      <RouteBadge route={event.route} />
-                    </td>
-                    <td className="cell-reason">{event.reason}</td>
-                    <td>
-                      {event.drop_confirmed ? (
-                        <span className="inline hint">
-                          <Icon name="check" size={14} />
-                          đã xác nhận
-                        </span>
-                      ) : (
-                        <button
-                          className="btn secondary sm"
-                          disabled={!event.release_allowed || !canOperate}
-                          title={
-                            event.release_allowed
-                              ? undefined
-                              : 'Viên này chưa được phép thả, nên không thể xác nhận đã rơi'
-                          }
-                          onClick={() => void run(() => api.confirmDrop(id, event.id, true))}
-                        >
-                          Xác nhận rơi
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+      <Card title="Kết quả theo khay" description="Mỗi khay hiển thị số viên đúng thuốc, sai thuốc và viên bể từ snapshot AI mới nhất.">
+        <div className="tray-results">{TRAYS.map((tray, index) => {
+          const result = trayResults.find((item) => item.tray_number === tray)
+          const summary = summaries[index]
+          return <article className="tray-result" key={tray}>
+            <div className="tray-result-header"><h3>Khay {tray}</h3>{result ? <Badge status="neutral">{summary.total} viên</Badge> : <span className="hint">Chưa có kết quả</span>}</div>
+            {result ? <>
+              <div className="tray-statuses">
+                <span className="tray-status good">Đúng: <strong>{summary.correct}</strong></span>
+                <span className="tray-status critical">Sai: <strong>{summary.wrong}</strong></span>
+                <span className="tray-status warning">Bể: <strong>{summary.broken}</strong></span>
+              </div>
+              <p className="hint tray-count-labels">{countLabel(result.counts)}</p>
+            </> : <p className="hint">AI chưa gửi số lượng cho khay này.</p>}
+          </article>
+        })}</div>
+      </Card>
+
+      <Card title="Ảnh theo khay" description="Mỗi mẻ có ba khay; ảnh gần nhất của từng khay được hiển thị tại đây.">
+        <div className="tray-images">{TRAYS.map((tray) => {
+          const trayResult = trayResults.find((result) => result.tray_number === tray)
+          const trayEvent = visibleEvents.find((event) => event.tray_number === tray)
+          return <article className="tray-image" key={tray}>
+            <div className="tray-image-header"><h3>Khay {tray}</h3><span className="hint">{trayResult?.image_path || trayEvent?.image_path ? 'Đã nhận ảnh' : 'Chưa nhận ảnh'}</span></div>
+            {trayResult?.image_path || trayEvent?.image_path ? <img src={trayResult?.image_path ?? trayEvent?.image_path ?? ''} alt={`Ảnh soi của khay ${tray}`} /> : <div className="tray-image-empty">Chưa có ảnh cho khay này</div>}
+          </article>
+        })}</div>
+      </Card>
+
+      <section className="card"><div className="card-header">
+        <div><h2>Từng viên</h2><p className="hint">{filteredEvents.length} / {visibleEvents.length} viên</p></div>
+        <label className="table-filter"><span>Khay</span><select value={selectedTray} onChange={(event) => setSelectedTray(event.target.value === 'all' ? 'all' : Number(event.target.value))}>
+          <option value="all">Tất cả khay</option>{TRAYS.map((tray) => <option key={tray} value={tray}>Khay {tray}</option>)}
+        </select></label>
+      </div>
+      {visibleEvents.length === 0 ? <EmptyState icon="pill" title="Chưa có viên nào được ghi nhận">Thiết bị sẽ đẩy kết quả soi từng viên vào đây khi mẻ đang chạy.</EmptyState>
+        : filteredEvents.length === 0 ? <EmptyState icon="inbox" title="Khay này chưa có lần soi nào">Chọn khay khác hoặc xem tất cả khay.</EmptyState>
+        : <div className="table-wrap"><table><thead><tr><th className="num">#</th><th>Lúc</th><th>Khay</th><th>Kết quả</th><th>Lý do</th></tr></thead><tbody>
+          {filteredEvents.map((event) => <tr key={event.id}><td className="num">{event.sequence}</td><td className="hint">{new Date(event.created_at).toLocaleTimeString('vi-VN')}</td><td>{event.tray_number ? `Khay ${event.tray_number}` : 'Chưa gán khay'}</td><td><RouteBadge route={event.route} /></td><td className="cell-reason">{event.reason}</td></tr>)}
+        </tbody></table></div>}
       </section>
     </div>
   )
 }
-

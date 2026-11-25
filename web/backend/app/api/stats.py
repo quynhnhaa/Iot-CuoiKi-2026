@@ -26,8 +26,6 @@ ROUTE_LABELS = {
     'ACCEPTED': 'Đúng, nguyên',
     'DEFECTIVE': 'Sứt, vỡ',
     'WRONG_DRUG': 'Sai thuốc',
-    'MULTIPLE_PILLS': 'Nhiều viên',
-    'EMPTY_FRAME': 'Khung trống',
 }
 
 # Chi hai duong nay tung duoc tha xuong o, nen chi hai duong nay co so "da xac

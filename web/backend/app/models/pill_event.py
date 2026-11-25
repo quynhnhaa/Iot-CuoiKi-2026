@@ -13,6 +13,8 @@ class PillEvent(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     batch_id: Mapped[int] = mapped_column(ForeignKey('batches.id'))
     sequence: Mapped[int]
+    # Mot anh/ket qua duoc gui cho mot trong ba khay cua me; de trong cho du lieu cu.
+    tray_number: Mapped[int | None] = mapped_column(default=None)
 
     # Quan sat tu pipeline AI.
     pill_count: Mapped[int]

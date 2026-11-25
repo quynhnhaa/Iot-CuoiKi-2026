@@ -31,7 +31,7 @@ def create_event(
     if BatchStatus(batch.status) is not BatchStatus.RUNNING:
         raise HTTPException(status.HTTP_409_CONFLICT, 'Mẻ đếm không ở trạng thái running')
 
-    observation = payload.model_dump(exclude={'image_path'})
+    observation = payload.model_dump(exclude={'image_path', 'tray_number'})
     try:
         decision = decide(**observation)
     except DecisionSimulatorUnavailable as error:
@@ -40,6 +40,7 @@ def create_event(
     event = PillEvent(
         batch_id=batch.id,
         sequence=len(batch.events) + 1,
+        tray_number=payload.tray_number,
         image_path=payload.image_path,
         route=decision['route'],
         release_allowed=decision['release_allowed'],

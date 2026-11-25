@@ -22,7 +22,13 @@ def list_users(session: Session = Depends(get_session)) -> list[User]:
 @router.post('', response_model=UserCreated, status_code=status.HTTP_201_CREATED)
 def create_user(payload: UserCreate, session: Session = Depends(get_session)) -> UserCreated:
     """Tài khoản người cần mật khẩu; tai khoan may duoc phat API key mot lan."""
-    user = User(username=payload.username, role=payload.role, full_name=payload.full_name, note=payload.note)
+    user = User(
+        username=payload.username,
+        role=payload.role,
+        full_name=payload.full_name,
+        email=payload.email,
+        note=payload.note,
+    )
     api_key: str | None = None
 
     if payload.role is Role.MACHINE:

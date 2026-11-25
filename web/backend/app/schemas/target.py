@@ -15,3 +15,4 @@ class TargetRead(TargetCreate):
 
     id: int
     created_at: datetime
+    image_count: int

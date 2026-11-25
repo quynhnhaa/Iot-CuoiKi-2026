@@ -9,6 +9,7 @@ from app.api import (
     stats,
     targets,
     thingsboard,
+    tray_results,
     users,
 )
 
@@ -19,6 +20,7 @@ api_router.include_router(users.router)
 api_router.include_router(targets.router)
 api_router.include_router(batches.router)
 api_router.include_router(pill_events.router)
+api_router.include_router(tray_results.router)
 api_router.include_router(stats.router)
 api_router.include_router(ai_runs.router)
 api_router.include_router(thingsboard.router)

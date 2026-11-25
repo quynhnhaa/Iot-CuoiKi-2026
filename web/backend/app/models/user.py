@@ -30,6 +30,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     username: Mapped[str] = mapped_column(String(64), unique=True)
     full_name: Mapped[str | None] = mapped_column(String(128), default=None)
+    email: Mapped[str | None] = mapped_column(String(255), default=None)
     role: Mapped[Role] = mapped_column(String(16), default=Role.VIEWER)
     is_active: Mapped[bool] = mapped_column(default=True)
 

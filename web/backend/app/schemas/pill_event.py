@@ -7,13 +7,15 @@ from pydantic import BaseModel, ConfigDict, Field
 class PillObservationIn(BaseModel):
     """Quan sat tu pipeline AI. Backend khong tu suy ra quyet dinh nao khac."""
 
-    pill_count: int = Field(ge=0)
+    # Moi anh gui len deu la mot khay co vien; khong nhan khung trong.
+    pill_count: int = Field(ge=1, le=1)
     image_usable: bool
     identity_verified: bool
     target_matches: bool
     defect_status: Literal['normal', 'defective', 'uncertain']
     identity_gate_validated: bool = False
     hardware_ready: bool = False
+    tray_number: int | None = Field(default=None, ge=1, le=3)
     image_path: str | None = None
 
 
@@ -27,6 +29,7 @@ class PillEventRead(BaseModel):
     id: int
     batch_id: int
     sequence: int
+    tray_number: int | None
     pill_count: int
     image_usable: bool
     identity_verified: bool
