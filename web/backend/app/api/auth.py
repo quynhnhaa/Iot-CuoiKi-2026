@@ -19,6 +19,7 @@ from app.schemas.auth import (
     TokenResponse,
     TotpVerifyRequest,
 )
+from app.schemas.user import MyProfileUpdate
 from app.services import auth as service
 
 router = APIRouter(prefix='/auth', tags=['auth'])
@@ -129,6 +130,21 @@ def confirm_enrollment(
 
 @router.get('/me', response_model=MeResponse)
 def me(user: User = Depends(get_current_user)) -> MeResponse:
+    response = MeResponse.model_validate(user)
+    response.unused_recovery_codes = sum(1 for code in user.recovery_codes if code.used_at is None)
+    return response
+
+
+@router.patch('/me', response_model=MeResponse)
+def update_me(
+    payload: MyProfileUpdate,
+    user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> MeResponse:
+    """Nguoi dung tu cap nhat email lien he cua chinh minh."""
+    user.email = payload.email
+    session.commit()
+    session.refresh(user)
     response = MeResponse.model_validate(user)
     response.unused_recovery_codes = sum(1 for code in user.recovery_codes if code.used_at is None)
     return response

@@ -54,6 +54,21 @@ class Settings(BaseSettings):
     model_dir: Path = PROJECT_ROOT / 'model'
     pipeline_runs_dir: Path = PROJECT_ROOT / 'model' / 'runs' / 'pipeline'
 
+    # Anh mau cho lan train tiep theo. Can toi thieu hai goc chup cho mot mau.
+    target_images_dir: Path = PROJECT_ROOT / 'data' / 'target-images'
+    min_target_images: int = 2
+    max_target_image_bytes: int = 10 * 1024 * 1024
+
+    # Email yeu cau train lai. De trong SMTP host hoac danh sach nguoi nhan
+    # thi nut yeu cau train se bao loi cau hinh, khong gia lap da gui email.
+    smtp_host: str = ''
+    smtp_port: int = 587
+    smtp_username: str = ''
+    smtp_password: str = ''
+    smtp_from: str = ''
+    smtp_use_tls: bool = True
+    train_notification_emails: str = ''
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(',') if origin.strip()]
@@ -61,6 +76,10 @@ class Settings(BaseSettings):
     @property
     def decision_simulator_path(self) -> Path:
         return self.model_dir / 'src' / 'common' / 'decision_simulator.py'
+
+    @property
+    def train_notification_recipients(self) -> list[str]:
+        return [email.strip() for email in self.train_notification_emails.split(',') if email.strip()]
 
 
 @lru_cache

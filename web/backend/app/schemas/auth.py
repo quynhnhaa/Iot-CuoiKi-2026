@@ -55,6 +55,7 @@ class MeResponse(BaseModel):
     id: int
     username: str
     full_name: str | None
+    email: str | None
     role: Role
     totp_enabled: bool
     last_login_at: datetime | None

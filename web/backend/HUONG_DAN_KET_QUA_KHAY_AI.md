@@ -142,3 +142,33 @@ Xem lại phần đã stage rồi tự commit:
 git diff --cached
 git commit -m "feat: show AI tray count summaries"
 ```
+
+## 5. Ảnh mẫu và yêu cầu train lại toàn bộ dữ liệu
+
+Khi thêm mẫu chuẩn từ giao diện, quản trị viên phải đính kèm ít nhất hai ảnh
+JPG, PNG hoặc WebP (tối đa 10 MB mỗi ảnh). Ảnh được lưu ở
+`data/target-images/<target_id>` và metadata nằm trong bảng `target_images`.
+
+Với cơ sở dữ liệu đang có, chạy migration bổ sung:
+
+```powershell
+.venv\Scripts\python.exe migrations\004_create_target_images.py
+```
+
+Nút **Yêu cầu train lại toàn bộ dữ liệu** ở đầu trang Mẫu chuẩn không train
+ngay trên web. Nó gửi email để người quản lý chủ động kiểm tra và chạy
+pipeline train với toàn bộ ảnh mẫu đang lưu. Cấu hình SMTP trong `web/.env`:
+
+```dotenv
+WEB_SMTP_HOST=smtp.example.com
+WEB_SMTP_PORT=587
+WEB_SMTP_USERNAME=bot@example.com
+WEB_SMTP_PASSWORD=<smtp-password>
+WEB_SMTP_FROM=bot@example.com
+WEB_SMTP_USE_TLS=true
+```
+
+Email người nhận lấy từ các tài khoản quản trị đang hoạt động. Mỗi quản trị
+viên tự thêm email trong menu tài khoản ở góc phải trên. Nếu thiếu SMTP host,
+địa chỉ gửi hoặc chưa có email quản trị, API trả lỗi cấu hình thay vì báo gửi
+email thành công.

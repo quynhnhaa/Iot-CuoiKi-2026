@@ -38,6 +38,7 @@ FIELD_LABELS: dict[str, str] = {
     'mfa_token': 'Phiên xác thực',
     'api_key': 'API key',
     'full_name': 'Họ tên',
+    'email': 'Email',
     'role': 'Vai trò',
     'is_active': 'Trạng thái hoạt động',
     'note': 'Ghi chú',

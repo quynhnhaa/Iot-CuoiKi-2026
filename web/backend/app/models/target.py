@@ -19,3 +19,10 @@ class Target(Base):
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
     batches: Mapped[list['Batch']] = relationship(back_populates='target')  # noqa: F821
+    images: Mapped[list['TargetImage']] = relationship(  # noqa: F821
+        back_populates='target', cascade='all, delete-orphan', order_by='TargetImage.id'
+    )
+
+    @property
+    def image_count(self) -> int:
+        return len(self.images)
